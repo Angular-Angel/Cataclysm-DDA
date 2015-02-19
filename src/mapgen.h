@@ -276,6 +276,7 @@ enum room_type {
 
 void house_room(map *m, room_type type, int x1, int y1, int x2, int y2, mapgendata & dat);
 // helpful functions
+bool connects_to(const complex_map_tile &tile, int dir_from_here);
 bool connects_to(oter_id there, int dir);
 void mapgen_rotate( map * m, oter_id terrain_type, bool north_is_down = false );
 // wrappers for map:: functions

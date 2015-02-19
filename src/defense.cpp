@@ -207,7 +207,7 @@ void defense_game::init_map()
 {
     for (int x = 0; x < OMAPX; x++) {
         for (int y = 0; y < OMAPY; y++) {
-            g->cur_om->ter(x, y, 0) = "field";
+            g->cur_om->ter(x, y, 0).set("field");
             g->cur_om->seen(x, y, 0) = true;
         }
     }
@@ -228,41 +228,41 @@ void defense_game::init_map()
     case DEFLOC_HOSPITAL:
         for (int x = 49; x <= 51; x++) {
             for (int y = 49; y <= 51; y++) {
-                g->cur_om->ter(x, y, 0) = "hospital";
+                g->cur_om->ter(x, y, 0).add("hospital");
             }
         }
-        g->cur_om->ter(50, 49, 0) = "hospital_entrance";
+        g->cur_om->ter(50, 49, 0).add("hospital_entrance");
         break;
 
     case DEFLOC_WORKS:
         for (int x = 49; x <= 50; x++) {
             for (int y = 49; y <= 50; y++) {
-                g->cur_om->ter(x, y, 0) = "public_works";
+                g->cur_om->ter(x, y, 0).add("public_works");
             }
         }
-        g->cur_om->ter(50, 49, 0) = "public_works_entrance";
+        g->cur_om->ter(50, 49, 0).add("public_works_entrance");
         break;
 
     case DEFLOC_MALL:
         for (int x = 49; x <= 51; x++) {
             for (int y = 49; y <= 51; y++) {
-                g->cur_om->ter(x, y, 0) = "megastore";
+                g->cur_om->ter(x, y, 0).add("megastore");
             }
         }
-        g->cur_om->ter(50, 49, 0) = "megastore_entrance";
+        g->cur_om->ter(50, 49, 0).add("megastore_entrance");
         break;
 
     case DEFLOC_BAR:
-        g->cur_om->ter(50, 50, 0) = "bar_north";
+        g->cur_om->ter(50, 50, 0).add("bar_north");
         break;
 
     case DEFLOC_MANSION:
         for (int x = 49; x <= 51; x++) {
             for (int y = 49; y <= 51; y++) {
-                g->cur_om->ter(x, y, 0) = "mansion";
+                g->cur_om->ter(x, y, 0).add("mansion");
             }
         }
-        g->cur_om->ter(50, 49, 0) = "mansion_entrance";
+        g->cur_om->ter(50, 49, 0).add("mansion_entrance");
         break;
     }
 

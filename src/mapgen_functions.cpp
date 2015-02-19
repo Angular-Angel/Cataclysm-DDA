@@ -9,8 +9,11 @@
 #include "game.h"
 #include <array>
 
-mapgendata::mapgendata(oter_id north, oter_id east, oter_id south, oter_id west, oter_id northeast,
-                       oter_id northwest, oter_id southeast, oter_id southwest, oter_id up, int z, const regional_settings * rsettings, map * mp) :
+mapgendata::mapgendata(complex_map_tile north, complex_map_tile east, 
+                       complex_map_tile south, complex_map_tile west, 
+                       complex_map_tile northeast, complex_map_tile northwest,
+                       complex_map_tile southeast, complex_map_tile southwest, 
+                       complex_map_tile up, int z, const regional_settings * rsettings, map * mp) :
     default_groundcover(0,1,0)
 {
     t_nesw[0] = north;
@@ -387,7 +390,7 @@ void mapgen_null(map *m, oter_id, mapgendata, int, float)
 void mapgen_crater(map *m, oter_id, mapgendata dat, int, float)
 {
     for(int i = 0; i < 4; i++) {
-        if(dat.t_nesw[i] != "crater") {
+        if(!dat.t_nesw[i].has("crater")) {
             dat.set_dir(i, 6);
         }
     }
@@ -483,9 +486,9 @@ void mapgen_forest_general(map *m, oter_id terrain_type, mapgendata dat, int tur
         dat.fill(0);
     }
     for (int i = 0; i < 4; i++) {
-        if (dat.t_nesw[i] == "forest" || dat.t_nesw[i] == "forest_water") {
+        if (dat.t_nesw[i].has("forest") || dat.t_nesw[i].has("forest_water")) {
             dat.dir(i) += 14;
-        } else if (dat.t_nesw[i] == "forest_thick") {
+        } else if (dat.t_nesw[i].has("forest_thick")) {
             dat.dir(i) += 18;
         }
     }
@@ -559,11 +562,11 @@ void mapgen_forest_general(map *m, oter_id terrain_type, mapgendata dat, int tur
     if (terrain_type == "forest_water") {
         // Reset *_fac to handle where to place water
         for (int i = 0; i < 8; i++) {
-            if (dat.t_nesw[i] == "forest_water") {
+            if (dat.t_nesw[i].has("forest_water")) {
                 dat.set_dir(i, 2);
             } else if (is_ot_type("river", dat.t_nesw[i])) {
                 dat.set_dir(i, 3);
-            } else if (dat.t_nesw[i] == "forest" || dat.t_nesw[i] == "forest_thick") {
+            } else if (dat.t_nesw[i].has("forest") || dat.t_nesw[i].has("forest_thick")) {
                 dat.set_dir(i, 1);
             } else {
                 dat.set_dir(i, 0);
@@ -786,8 +789,8 @@ void mapgen_hive(map *m, oter_id, mapgendata dat, int turn, float)
                 if (skip1 == 23 || skip2 == 23)
                     m->ter_set(i + 1, j + 4, t_floor_wax);
 
-                if (dat.t_nesw[0] == "hive" && dat.t_nesw[1] == "hive" &&
-                      dat.t_nesw[2] == "hive" && dat.t_nesw[3] == "hive") {
+                if (dat.t_nesw[0].has("hive") && dat.t_nesw[1].has("hive") &&
+                      dat.t_nesw[2].has("hive") && dat.t_nesw[3].has("hive")) {
                     m->place_items("hive_center", 90, i - 2, j - 2, i + 2, j + 2, false, turn);
                 } else {
                     m->place_items("hive", 80, i - 2, j - 2, i + 2, j + 2, false, turn);
@@ -802,9 +805,9 @@ void mapgen_spider_pit(map *m, oter_id, mapgendata dat, int turn, float)
     // First generate a forest
     dat.fill(4);
     for (int i = 0; i < 4; i++) {
-        if (dat.t_nesw[i] == "forest" || dat.t_nesw[i] == "forest_water") {
+        if (dat.t_nesw[i].has("forest") || dat.t_nesw[i].has("forest_water")) {
             dat.dir(i) += 14;
-        } else if (dat.t_nesw[i] == "forest_thick") {
+        } else if (dat.t_nesw[i].has("forest_thick")) {
             dat.dir(i) += 18;
         }
     }
@@ -945,7 +948,7 @@ void mapgen_road_straight(map *m, oter_id terrain_type, mapgendata dat, int turn
 {
     bool sidewalks = false;
     for (int i = 0; i < 8; i++) {
-        if (otermap[dat.t_nesw[i]].sidewalk) {
+        if (dat.t_nesw[i].sidewalk()) {
             sidewalks = true;
         }
     }
@@ -993,7 +996,7 @@ void mapgen_road_end(map *m, oter_id terrain_type, mapgendata dat, int turn, flo
 {
     bool sidewalks = false;
     for (int i = 0; i < 8; i++) {
-        if (otermap[dat.t_nesw[i]].sidewalk) {
+        if (dat.t_nesw[i].sidewalk()) {
             sidewalks = true;
         }
     }
@@ -1093,7 +1096,7 @@ void mapgen_road_curved(map *m, oter_id terrain_type, mapgendata dat, int turn, 
 {
     bool sidewalks = false;
     for (int i = 0; i < 8; i++) {
-        if (otermap[dat.t_nesw[i]].sidewalk) {
+        if (dat.t_nesw[i].sidewalk()) {
             sidewalks = true;
         }
     }
@@ -1197,7 +1200,7 @@ void mapgen_road_tee(map *m, oter_id terrain_type, mapgendata dat, int turn, flo
 {
     bool sidewalks = false;
     for (int i = 0; i < 8; i++) {
-        if (otermap[dat.t_nesw[i]].sidewalk) {
+        if (dat.t_nesw[i].sidewalk()) {
             sidewalks = true;
         }
     }
@@ -1245,13 +1248,13 @@ void mapgen_road_four_way(map *m, oter_id terrain_type, mapgendata dat, int turn
 {
     bool plaza = false;
     for (int i = 0; i < 4; i++) {
-        if (dat.t_nesw[i] == "road_nesw" || dat.t_nesw[i] == "road_nesw_manhole") {
+        if (dat.t_nesw[i].has("road_nesw") || dat.t_nesw[i].has("road_nesw_manhole")) {
             plaza = true;
         }
     }
     bool sidewalks = false;
     for (int i = 0; i < 8; i++) {
-        if (otermap[dat.t_nesw[i]].sidewalk) {
+        if (dat.t_nesw[i].sidewalk()) {
             sidewalks = true;
         }
     }
@@ -1378,11 +1381,11 @@ void mapgen_subway_station(map *m, oter_id, mapgendata dat, int, float)
 void mapgen_subway_straight(map *m, oter_id terrain_type, mapgendata dat, int, float)
 {
         if (terrain_type == "subway_ns") {
-            dat.w_fac = (dat.west()  == "cavern" ? 0 : 4);
-            dat.e_fac = (dat.east()  == "cavern" ? SEEX * 2 : SEEX * 2 - 5);
+            dat.w_fac = (dat.west().has("cavern") ? 0 : 4);
+            dat.e_fac = (dat.east().has("cavern") ? SEEX * 2 : SEEX * 2 - 5);
         } else {
-            dat.w_fac = (dat.north() == "cavern" ? 0 : 4);
-            dat.e_fac = (dat.south() == "cavern" ? SEEX * 2 : SEEX * 2 - 5);
+            dat.w_fac = (dat.north().has("cavern") ? 0 : 4);
+            dat.e_fac = (dat.south().has("cavern") ? SEEX * 2 : SEEX * 2 - 5);
         }
         for (int i = 0; i < SEEX * 2; i++) {
             for (int j = 0; j < SEEY * 2; j++) {
@@ -1419,7 +1422,7 @@ void mapgen_subway_curved(map *m, oter_id terrain_type, mapgendata dat, int, flo
                 }
             }
         }
-        if (dat.t_above >= "sub_station_north" && dat.t_above <= "sub_station_west") {
+        if (is_subway_station(dat.t_above)) {
             m->ter_set(SEEX * 2 - 5, rng(SEEY - 5, SEEY + 4), t_stairs_up);
         }
         m->place_items("subway", 30, 0, 0, SEEX * 2 - 1, SEEY * 2 - 1, true, 0);
@@ -1448,7 +1451,7 @@ void mapgen_subway_tee(map *m, oter_id terrain_type, mapgendata dat, int, float)
                 }
             }
         }
-        if (dat.t_above >= "sub_station_north" && dat.t_above <= "sub_station_west") {
+        if (is_subway_station(dat.t_above)) {
             m->ter_set(4, rng(SEEY - 5, SEEY + 4), t_stairs_up);
         }
         m->place_items("subway", 35, 0, 0, SEEX * 2 - 1, SEEY * 2 - 1, true, 0);
@@ -1838,7 +1841,7 @@ void mapgen_parking_lot(map *m, oter_id, mapgendata dat, int turn, float)
 
     m->place_items("road", 8, 0, 0, SEEX * 2 - 1, SEEY * 2 - 1, false, turn);
     for (int i = 1; i < 4; i++) {
-        if (dat.t_nesw[i].size() > 5 && dat.t_nesw[i].find("road_",0,5) == 0) {
+        if (dat.t_nesw[i].visible().size() > 5 && dat.t_nesw[i].visible().find("road_",0,5) == 0) {
             m->rotate(i);
         }
     }
@@ -5990,7 +5993,7 @@ void mapgen_haz_sar_b1(map *m, oter_id terrain_type, mapgendata dat, int turn, f
 
 void mapgen_cave(map *m, oter_id, mapgendata dat, int turn, float density)
 {
-        if (dat.above() == "cave") {
+        if (dat.above().has("cave")) {
             // We're underground! // FIXME; y u no use zlevel
             for (int i = 0; i < SEEX * 2; i++) {
                 for (int j = 0; j < SEEY * 2; j++) {
@@ -6091,7 +6094,7 @@ void mapgen_cave_rat(map *m, oter_id, mapgendata dat, int, float)
 
         fill_background(m, t_rock);
 
-        if (dat.above() == "cave_rat") { // Finale
+        if (dat.above().has("cave_rat")) { // Finale
             rough_circle(m, t_rock_floor, SEEX, SEEY, 8);
             square(m, t_rock_floor, SEEX - 1, SEEY, SEEX, SEEY * 2 - 2);
             line(m, t_slope_up, SEEX - 1, SEEY * 2 - 3, SEEX, SEEY * 2 - 2);
@@ -6224,8 +6227,8 @@ void mapgen_cavern(map *m, oter_id, mapgendata dat, int, float)
 
     for (int i = 0; i < 4; i++) { // don't look at me like that, this was messed up before I touched it :P - AD ( FIXME )
        dat.set_dir(i,
-             (dat.t_nesw[i] == "cavern" || dat.t_nesw[i] == "subway_ns" ||
-                       dat.t_nesw[i] == "subway_ew" ? 0 : 3)
+             (dat.t_nesw[i].has("cavern") || dat.t_nesw[i].has("subway_ns") ||
+                       dat.t_nesw[i].has("subway_ew") ? 0 : 3)
         );
     }
     dat.e_fac = SEEX * 2 - 1 - dat.e_fac;
@@ -6313,8 +6316,8 @@ void mapgen_rock(map *m, oter_id, mapgendata dat, int, float)
 {
 
     for (int i = 0; i < 4; i++) {
-        if (dat.t_nesw[i] == "cavern" || dat.t_nesw[i] == "slimepit" ||
-            dat.t_nesw[i] == "slimepit_down") {
+        if (dat.t_nesw[i].has("cavern") || dat.t_nesw[i].has("slimepit") ||
+            dat.t_nesw[i].has("slimepit_down")) {
             dat.dir(i) = 6;
         } else {
             dat.dir(i) = 0;
@@ -6345,28 +6348,28 @@ void mapgen_open_air(map *m, oter_id, mapgendata, int, float){
 void mapgen_rift(map *m, oter_id, mapgendata dat, int, float)
 {
 
-    if (dat.north() != "rift" && dat.north() != "hellmouth") {
+    if (!dat.north().has("rift") && !dat.north().has("hellmouth")) {
         if (connects_to(dat.north(), 2)) {
             dat.n_fac = rng(-6, -2);
         } else {
             dat.n_fac = rng(2, 6);
         }
     }
-    if (dat.east() != "rift" && dat.east() != "hellmouth") {
+    if (!dat.east().has("rift") && !dat.east().has("hellmouth")) {
         if (connects_to(dat.east(), 3)) {
             dat.e_fac = rng(-6, -2);
         } else {
             dat.e_fac = rng(2, 6);
         }
     }
-    if (dat.south() != "rift" && dat.south() != "hellmouth") {
+    if (!dat.south().has("rift") && !dat.south().has("hellmouth")) {
         if (connects_to(dat.south(), 0)) {
             dat.s_fac = rng(-6, -2);
         } else {
             dat.s_fac = rng(2, 6);
         }
     }
-    if (dat.west() != "rift" && dat.west() != "hellmouth") {
+    if (!dat.west().has("rift") && !dat.west().has("hellmouth")) {
         if (connects_to(dat.west(), 1)) {
             dat.w_fac = rng(-6, -2);
         } else {
@@ -6400,7 +6403,7 @@ void mapgen_hellmouth(map *m, oter_id, mapgendata dat, int, float)
     // what is this, doom?
     // .. seriously, though...
     for (int i = 0; i < 4; i++) {
-        if (dat.t_nesw[i] != "rift" && dat.t_nesw[i] != "hellmouth") {
+        if (!dat.t_nesw[i].has("rift") && !dat.t_nesw[i].has("hellmouth")) {
             dat.dir(i) = 6;
         }
     }

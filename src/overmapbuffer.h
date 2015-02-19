@@ -76,8 +76,8 @@ public:
      * Uses global overmap terrain coordinates, creates the
      * overmap if needed.
      */
-    oter_id& ter(int x, int y, int z);
-    oter_id& ter(const tripoint& p) { return ter(p.x, p.y, p.z); }
+    complex_map_tile& ter(int x, int y, int z);
+    complex_map_tile & ter(const tripoint& p) { return ter(p.x, p.y, p.z); }
     /**
      * Uses global overmap terrain coordinates.
      */

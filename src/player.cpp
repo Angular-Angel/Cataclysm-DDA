@@ -765,7 +765,7 @@ void player::update_bodytemp()
     if( veh ) {
         vehwindspeed = abs(veh->velocity / 100); // vehicle velocity in mph
     }
-    const oter_id &cur_om_ter = overmap_buffer.ter(g->om_global_location());
+    const oter_id &cur_om_ter = overmap_buffer.ter(g->om_global_location()).visible();
     std::string omtername = otermap[cur_om_ter].name;
     bool sheltered = g->is_sheltered(posx(), posy());
     int total_windpower = get_local_windpower(weather.windpower + vehwindspeed, omtername, sheltered);
@@ -1859,7 +1859,7 @@ void player::memorial( std::ofstream &memorial_file, std::string epitaph )
     }
 
     //Figure out the location
-    const oter_id &cur_ter = overmap_buffer.ter(g->om_global_location());
+    const oter_id &cur_ter = overmap_buffer.ter(g->om_global_location()).visible();
     point cur_loc = g->om_location();
     std::string tername = otermap[cur_ter].name;
 
@@ -2134,7 +2134,7 @@ void player::add_memorial_log(const char* male_msg, const char* female_msg, ...)
                                calendar::turn.days() + 1, calendar::turn.print_time().c_str()
                                );
 
-    const oter_id &cur_ter = overmap_buffer.ter(g->om_global_location());
+    const oter_id &cur_ter = overmap_buffer.ter(g->om_global_location()).visible();
     std::string location = otermap[cur_ter].name;
 
     std::stringstream log_message;
@@ -4165,8 +4165,8 @@ bool player::overmap_los(int omtx, int omty, int sight_points)
 
     const std::vector<point> line = line_to(ompos.x, ompos.y, omtx, omty, 0);
     for (size_t i = 0; i < line.size() && sight_points >= 0; i++) {
-        const oter_id &ter = overmap_buffer.ter(line[i].x, line[i].y, ompos.z);
-        const int cost = otermap[ter].see_cost;
+        const complex_map_tile &tile = overmap_buffer.ter(line[i].x, line[i].y, ompos.z);
+        const int cost = tile.see_cost();
         sight_points -= cost;
         if (sight_points < 0)
             return false;

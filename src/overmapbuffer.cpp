@@ -333,7 +333,7 @@ overmap &overmapbuffer::get_om_global(const point& p)
     return get(om_pos.x, om_pos.y);
 }
 
-oter_id& overmapbuffer::ter(int x, int y, int z) {
+complex_map_tile& overmapbuffer::ter(int x, int y, int z) {
     overmap &om = get_om_global(x, y);
     return om.ter(x, y, z);
 }

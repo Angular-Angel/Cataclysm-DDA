@@ -329,8 +329,8 @@ void mission_start::place_npc_software(mission *miss)
  compmap.load_abs(place.x * 2, place.y * 2, g->levz, false);
  point comppoint;
 
-    oter_id oter = g->cur_om->ter(place.x, place.y, 0);
-    if( is_ot_type("house", oter) || is_ot_type("s_pharm", oter) || oter == "" ) {
+    complex_map_tile oter = g->cur_om->ter(place.x, place.y, 0);
+    if( is_ot_type("house", oter) || is_ot_type("s_pharm", oter) || oter.equals("") ) {
         std::vector<point> valid;
         for (int x = 0; x < SEEX * 2; x++) {
             for (int y = 0; y < SEEY * 2; y++) {

@@ -641,7 +641,7 @@ void overmap::save() const
         oter_id last_tertype(-1);
         for (int j = 0; j < OMAPY; j++) {
             for (int i = 0; i < OMAPX; i++) {
-                oter_id t = layer[z].terrain[i][j];
+                oter_id t = layer[z].terrain[i][j].visible();
                 if (t != last_tertype) {
                     if (count) {
                         fout << count << " ";

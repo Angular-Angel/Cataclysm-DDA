@@ -467,8 +467,8 @@ void computer::activate_function(computer_action action)
         const tripoint center = g->om_global_location();
         for (int i = -60; i <= 60; i++) {
             for (int j = -60; j <= 60; j++) {
-                const oter_id &oter = overmap_buffer.ter(center.x + i, center.y + j, center.z);
-                if (is_ot_type("sewer", oter) || is_ot_type("sewage", oter)) {
+                const complex_map_tile &tile = overmap_buffer.ter(center.x + i, center.y + j, center.z);
+                if (is_ot_type("sewer", tile) || is_ot_type("sewage", tile)) {
                     overmap_buffer.set_seen(center.x + i, center.y + j, center.z, true);
                 }
             }
@@ -518,11 +518,11 @@ void computer::activate_function(computer_action action)
             tmpmap.save();
         }
 
-        const oter_id oter = overmap_buffer.ter(target.x, target.y, 0);
+        const complex_map_tile tile = overmap_buffer.ter(target.x, target.y, 0);
         //~ %s is terrain name
         g->u.add_memorial_log( pgettext("memorial_male", "Launched a nuke at a %s."),
                                pgettext("memorial_female", "Launched a nuke at a %s."),
-                               otermap[oter].name.c_str() );
+                               otermap[tile.visible()].name.c_str() );
         for(int x = target.x - 2; x <= target.x + 2; x++) {
             for(int y = target.y - 2; y <= target.y + 2; y++) {
                 // give it a nice rounded shape

@@ -42,13 +42,13 @@ bool tutorial_game::init()
     g->cur_om = &overmap_buffer.get(0, 0);
     for (int i = 0; i < OMAPX; i++) {
         for (int j = 0; j < OMAPY; j++) {
-            g->cur_om->ter( i, j, -1 ) = "rock";
+            g->cur_om->ter( i, j, -1 ).set("rock");
             // Start with the overmap revealed
             g->cur_om->seen( i, j, 0 ) = true;
         }
     }
-    g->cur_om->ter(lx, ly, 0) = "tutorial";
-    g->cur_om->ter(lx, ly, -1) = "tutorial";
+    g->cur_om->ter(lx, ly, 0).set("tutorial");
+    g->cur_om->ter(lx, ly, -1).set("tutorial");
     g->cur_om->clear_mon_groups();
     // to submap coordinates as it is supposed to be
     g->levx = lx * 2;

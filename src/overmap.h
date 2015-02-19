@@ -27,7 +27,7 @@ class npc;
 
 // base oters: exactly what's defined in json before things are split up into blah_east or roadtype_ns, etc
 extern std::unordered_map<std::string, oter_t> obasetermap;
-
+extern std::unordered_map<std::string, oter_t> otermap;
 // Likelihood to pick a specific overmap terrain.
 struct oter_weight {
     std::string ot_sid;
@@ -37,8 +37,14 @@ struct oter_weight {
 
 // Local class for picking overmap terrain from a weighted list.
 struct oter_weight_list {
+    private:
+    int total_weight;
+    std::vector<oter_weight> items; //a list of the various terrains and the chances to pick any given one of them.
+    
+    public:
     oter_weight_list() : total_weight(0) { };
 
+    //adds a new terrain and chance to pick it to the list.
     void add_item(std::string id, int weight) {
         oter_weight new_weight = { id, -1, weight };
         items.push_back(new_weight);
@@ -60,7 +66,7 @@ struct oter_weight_list {
         }
     }
 
-    size_t pick_ent() {
+    size_t pick_ent() { //picks a random terrain and returns the index on this list.
         int picked = rng(0, total_weight);
         int accumulated_weight = 0;
         size_t i;
@@ -73,17 +79,13 @@ struct oter_weight_list {
         return i;
     }
 
-    std::string pickstr() {
+    std::string pickstr() { //returns the ter_id of a random item.
         return items[ pick_ent() ].ot_sid;
     }
 
-    int pick() {
+    int pick() { //returns the ter_id of a random item.
         return items[ pick_ent() ].ot_iid;
     }
-
-private:
-    int total_weight;
-    std::vector<oter_weight> items;
 };
 
 
@@ -134,7 +136,7 @@ todo: add relevent vars to regional_settings struct
 
 /*
  * template for random bushes and such.
- * supports occasional boost to a single ter/furn type (clustered blueberry bushes for example)
+ * supports occasional boost to a single terrain/furniture type (clustered blueberry bushes for example)
  * json: double percentages (region statistics)and str ids, runtime int % * 1mil and int ids
  */
 struct groundcover_extra { // todo; make into something more generic for other stuff (maybe)
@@ -237,9 +239,107 @@ radio_tower(int X = -1, int Y = -1, int S = -1, std::string M = "",
             radio_type T = MESSAGE_BROADCAST) :
     x (X), y (Y), strength (S), type (T), message (M) {frequency = rand();}
 };
+// represents a single tile, which might have several different kinds of details 
+// on it. You might find, for example, a [forest, creek, trail, bodies, fungus] 
+// or a [swamp, shack, stash, carnage] or any of a million different combinations.
 
-struct map_layer {
-    oter_id terrain[OMAPX][OMAPY];
+struct complex_map_tile { 
+    std::vector<oter_id> tiles;
+    
+    //Default initializer
+    complex_map_tile() {tiles = std::vector<oter_id>();}
+    //Initialize with a terrain present
+    complex_map_tile(oter_id ter) {
+	tiles = std::vector<oter_id>();
+	tiles.push_back(ter);
+    }
+    //Set this complex map tile to be the given terrain and only the given terrain.
+    void set(const oter_id &ter) {
+	tiles.clear();
+	tiles.push_back(ter);
+    }
+    //same as above except using string
+    void set(const char *ter) {
+	tiles.clear();
+	tiles.push_back(oter_id(ter));
+    }
+    //checks to see if they given terrain is present on this tile.
+    bool has(const oter_id &ter) const {
+	for (const oter_id &lter : tiles) {
+	    if (lter == ter) return true;
+	}
+	return false;
+    }
+    //same as above, but uses string
+    bool has(const char *ter) const {
+        for (const oter_id &lter : tiles) {
+	    if (lter == ter) return true;
+	}
+	return false;
+    }
+    //adds the given terrain on top of this tile.
+    void add(const oter_id &ter) {
+        if (!has(ter)) tiles.push_back(ter);
+    }
+    //same as above but uses string
+    void add(const char *ter) {
+        if (!has(ter)) tiles.push_back(oter_id(ter));
+    }
+    //returns the terrain that is most visible
+    oter_id visible() const {
+        if (tiles.size() > 0) return tiles[tiles.size() - 1];
+        else return ot_null;
+    }
+    //checks to see if the given tile is the only tile to be found here.
+    bool equals(oter_id &ter) const {
+        if (tiles.size() == 1 && tiles[0] == ter) return true;
+	else return false;
+    }
+    //as above, except uses string.
+    bool equals(const char *ter) const {
+        if (tiles.size() == 1 && tiles[0] == ter) return true;
+	else return false;
+    }
+    //as above, except uses std::string
+    bool equals(const std::string &ter) const {
+        if (tiles.size() == 1 && tiles[0] == ter.c_str()) return true;
+	else return false;
+    }
+    //returns a value for how hard it is to see through this tile.
+    unsigned char see_cost() const {
+        unsigned char ret = 0;
+        for (const oter_id &ter : tiles) {
+	    if (otermap[ter].see_cost > ret) ret = otermap[ter].see_cost;
+	}
+        return ret;
+    }
+    //returns a value for the monster density for this tile.
+    int mondensity() const {
+        int ret = 0;
+        for (const oter_id &ter : tiles) {
+	    if (otermap[ter].mondensity > ret) ret = otermap[ter].mondensity;
+	}
+        return ret;
+    }
+    //
+    bool sidewalk() const {
+        for (const oter_id &ter : tiles) {
+	    if (otermap[ter].sidewalk) return true;
+	}
+        return false;
+    }
+    //returns the map extras for this map.
+    std::string extras() const {
+        return otermap[visible()].extras;
+    }
+    //returs the static spawns to be found on this tile
+    overmap_spawns static_spawns() const {
+        return otermap[visible()].static_spawns;
+    }
+};
+
+struct map_layer { //represents a layer of an overmap.
+    complex_map_tile terrain[OMAPX][OMAPY];
     bool visible[OMAPX][OMAPY];
     bool explored[OMAPX][OMAPY];
     std::vector<om_note> notes;
@@ -292,8 +392,8 @@ class overmap
     point random_house_in_city(int city_id);
     int dist_from_city(point p);
 
-    oter_id& ter(const int x, const int y, const int z);
-    const oter_id get_ter(const int x, const int y, const int z) const;
+    complex_map_tile& ter(const int x, const int y, const int z);
+    const complex_map_tile get_ter(const int x, const int y, const int z) const;
     bool&   seen(int x, int y, int z);
     bool&   explored(int x, int y, int z);
     bool is_safe(int x, int y, int z); // true if monsters_at is empty, or only woodland
@@ -382,7 +482,7 @@ public:
 
     std::array<map_layer, OVERMAP_LAYERS> layer;
 
-  oter_id nullret;
+  complex_map_tile nullret;
   bool nullbool;
   std::string nullstr;
 
@@ -462,12 +562,11 @@ public:
     overmap() = delete;
 };
 
-// TODO: readd the stream operators
+// TODO: read the stream operators
 //std::ostream & operator<<(std::ostream &, const overmap *);
 //std::ostream & operator<<(std::ostream &, const overmap &);
 //std::ostream & operator<<(std::ostream &, const city &);
 
-extern std::unordered_map<std::string,oter_t> otermap;
 extern std::vector<oter_t> oterlist;
 //extern const regional_settings default_region_settings;
 extern std::unordered_map<std::string, regional_settings> region_settings_map;
@@ -479,8 +578,18 @@ void reset_region_settings();
 
 void finalize_overmap_terrain();
 
+bool is_river(const complex_map_tile &tile);
 bool is_river(const oter_id &ter);
+
+bool is_lab(const complex_map_tile &tile, const char *str);
+bool is_lab(const oter_id &ter, const char *str);
+
+bool is_subway_station(const complex_map_tile &tile);
+bool is_subway_station(const oter_id &ter);
+
+bool is_ot_type(const std::string &otype, const complex_map_tile &tile);
 bool is_ot_type(const std::string &otype, const oter_id &oter);
+
 map_extras& get_extras(const std::string &name);
 
 #endif

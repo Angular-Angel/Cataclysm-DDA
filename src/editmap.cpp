@@ -1567,10 +1567,10 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
 
     // Coordinates of the overmap terrain that should be generated.
     const point omt_pos = overmapbuffer::ms_to_omt_copy( tc.abs_pos );
-    oter_id &omt_ref = overmap_buffer.ter( omt_pos.x, omt_pos.y, zlevel );
+    complex_map_tile &omt_ref = overmap_buffer.ter( omt_pos.x, omt_pos.y, zlevel );
     // Copy to store the original value, to restore it upon canceling
-    const oter_id orig_oters = omt_ref;
-    omt_ref = gmenu.ret;
+    const complex_map_tile orig_oters = omt_ref;
+    omt_ref = complex_map_tile(oter_id(gmenu.ret));
     tinymap tmpmap;
     // TODO: add a do-not-save-generated-submaps parameter
     // TODO: keep track of generated submaps to delete them properly and to avoid memory leaks
@@ -1606,7 +1606,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
     do {
         if ( gmenu.selected != lastsel ) {
             lastsel = gmenu.selected;
-            omt_ref = gmenu.selected;
+            omt_ref = complex_map_tile(oter_id(gmenu.selected));
             cleartmpmap( tmpmap );
             tmpmap.generate( omt_pos.x * 2, omt_pos.y * 2, zlevel, calendar::turn );
             showpreview = true;
@@ -1715,8 +1715,8 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
 
                 } else if ( gpmenu.ret == 3 ) {
                     popup(_("Changed oter_id from '%s' (%s) to '%s' (%s)"),
-                          orig_oters.t().name.c_str(), orig_oters.c_str(),
-                          omt_ref.t().name.c_str(), omt_ref.c_str());
+                          orig_oters.visible().t().name.c_str(), orig_oters.visible().c_str(),
+                          omt_ref.visible().t().name.c_str(), omt_ref.visible().c_str());
                 }
             } else if ( gpmenu.keypress == 'm' ) {
                 // todo; keep preview as is and move target

@@ -7,7 +7,7 @@
 struct mapgendata
 {
 public:
-  oter_id t_nesw[8];
+  complex_map_tile t_nesw[8];
   int n_fac; // dir == 0
   int e_fac; // dir == 1
   int s_fac; // dir == 2
@@ -16,25 +16,28 @@ public:
   int se_fac; // dir == 5
   int nw_fac; // dir == 6
   int sw_fac; // dir == 7
-  oter_id t_above;
+  complex_map_tile t_above;
   int zlevel;
   const regional_settings * region;
   map * m;
   id_or_id default_groundcover;
-  mapgendata(oter_id t_north, oter_id t_east, oter_id t_south, oter_id t_west, oter_id t_neast,
-              oter_id t_seast, oter_id t_nwest, oter_id t_swest, oter_id up, int z, const regional_settings * rsettings, map * mp );
+  mapgendata(complex_map_tile t_north, complex_map_tile t_east, 
+             complex_map_tile t_south, complex_map_tile t_west, 
+             complex_map_tile t_neast, complex_map_tile t_seast, 
+             complex_map_tile t_nwest, complex_map_tile t_swest, 
+             complex_map_tile up, int z, const regional_settings * rsettings, map * mp );
   void set_dir(int dir_in, int val);
   void fill(int val);
   int& dir(int dir_in);
-  oter_id  north() const { return t_nesw[0]; }
-  oter_id  east()  const { return t_nesw[1]; }
-  oter_id  south() const { return t_nesw[2]; }
-  oter_id  west()  const { return t_nesw[3]; }
-  oter_id  neast() const { return t_nesw[4]; }
-  oter_id  seast() const { return t_nesw[5]; }
-  oter_id  nwest() const { return t_nesw[6]; }
-  oter_id  swest() const { return t_nesw[7]; }
-  oter_id  above() const { return t_above; }
+  complex_map_tile  north() const { return t_nesw[0]; }
+  complex_map_tile  east()  const { return t_nesw[1]; }
+  complex_map_tile  south() const { return t_nesw[2]; }
+  complex_map_tile  west()  const { return t_nesw[3]; }
+  complex_map_tile  neast() const { return t_nesw[4]; }
+  complex_map_tile  seast() const { return t_nesw[5]; }
+  complex_map_tile  nwest() const { return t_nesw[6]; }
+  complex_map_tile  swest() const { return t_nesw[7]; }
+  complex_map_tile  above() const { return t_above; }
   void fill_groundcover();
   void square_groundcover(const int x1, const int y1, const int x2, const int y2);
   ter_id groundcover();

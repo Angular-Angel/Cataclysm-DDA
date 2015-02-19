@@ -58,7 +58,7 @@ int get_rot_since( const int since, const int endturn, const point &location )
     // http://github.com/CleverRaven/Cataclysm-DDA/issues/9162
     // Bug with this hack: Rot is prevented even when it's above
     // freezing on the ground floor.
-    oter_id oter = overmap_buffer.ter(g->om_global_location());
+    complex_map_tile oter = overmap_buffer.ter(g->om_global_location());
     if (is_ot_type("ice_lab", oter)) {
         return 0;
     }
