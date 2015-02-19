@@ -247,10 +247,10 @@ struct complex_map_tile {
     std::vector<oter_id> tiles;
     
     //Default initializer
-    complex_map_tile() {tiles = std::vector<oter_id>();}
+    complex_map_tile() {}
     //Initialize with a terrain present
     complex_map_tile(oter_id ter) {
-	tiles = std::vector<oter_id>();
+	//tiles = std::vector<oter_id>();
 	tiles.push_back(ter);
     }
     //Set this complex map tile to be the given terrain and only the given terrain.

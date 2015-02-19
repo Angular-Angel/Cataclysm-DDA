@@ -215,6 +215,7 @@ bool is_ot_type(const std::string &otype, const oter_id &oter)
     }
 
 }
+bool road_allowed(const oter_id &ter);
 
 //check every piece of a complex tile to see if it disallows roads.
 bool road_allowed(const complex_map_tile &tile)
@@ -1396,6 +1397,7 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
     oter_id ccur_ter = "";
     // used inside the loop
     complex_map_tile cur_tile;
+    complex_map_tile ccur_tile;
     oter_id cur_ter = ot_null;
     nc_color ter_color;
     long ter_sym;
@@ -1432,7 +1434,7 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
             bool los = false;
             if (see) {
                 // Only load terrain if we can actually see it
-	      cur_tile = overmap_buffer.ter(omx, omy, z);
+	        cur_tile = overmap_buffer.ter(omx, omy, z);
                 cur_ter = cur_tile.visible();
 
                 // Check if location is within player line-of-sight
@@ -1596,6 +1598,7 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
             if (omx == cursx && omy == cursy) {
                 csee = see;
                 ccur_ter = cur_ter;
+                ccur_tile = cur_tile;
                 mvwputch_hi(w, j, i, ter_color, ter_sym);
             } else {
                 mvwputch(w, j, i, ter_color, ter_sym);
@@ -1769,13 +1772,16 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
             }
         } else {
             
-	    for (size_t j = 0; j < cur_tile.tiles.size(); j++) {
-		oter_id tile_ter = cur_tile.tiles[j];
-	        mvwputch(wbar, 1, j + 1, otermap[tile_ter].color, otermap[tile_ter].sym);
+	    for (size_t j = 0; j < ccur_tile.tiles.size(); j++) {
+		oter_id tile_ter = ccur_tile.tiles[j];
+	        mvwputch(wbar, j + 1, 1, otermap[tile_ter].color, otermap[tile_ter].sym);
 		std::vector<std::string> name = foldstring(otermap[tile_ter].name, 25);
-		for (size_t i = 0; i < name.size(); i++) {
-		    mvwprintz(wbar, i + 1, j + 3, otermap[tile_ter].color, "%s", name[i].c_str());
-		}
+                //size_t offset = 0;
+                mvwprintz(wbar, j + 1, 3, otermap[tile_ter].color, "%s", otermap[tile_ter].name.c_str());
+		//for (size_t i = 0; i < name.size(); i++) {
+                    //if (i > 0) offset += 1;
+		    
+		//}
 	    }
         }
     } else {
