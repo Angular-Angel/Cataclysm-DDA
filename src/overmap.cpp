@@ -1775,7 +1775,7 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
 	    for (size_t j = 0; j < ccur_tile.tiles.size(); j++) {
 		oter_id tile_ter = ccur_tile.tiles[j];
 	        mvwputch(wbar, j + 1, 1, otermap[tile_ter].color, otermap[tile_ter].sym);
-		std::vector<std::string> name = foldstring(otermap[tile_ter].name, 25);
+		//std::vector<std::string> name = foldstring(otermap[tile_ter].name, 25);
                 //size_t offset = 0;
                 mvwprintz(wbar, j + 1, 3, otermap[tile_ter].color, "%s", otermap[tile_ter].name.c_str());
 		//for (size_t i = 0; i < name.size(); i++) {
@@ -1786,6 +1786,7 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
         }
     } else {
         mvwprintz(wbar, 1, 1, c_dkgray, _("# Unexplored"));
+        mvwprintz(wbar, 4, 1, c_dkgray, _("# Unexplored"));
     }
 
     if (has_target) {

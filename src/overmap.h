@@ -253,6 +253,12 @@ struct complex_map_tile {
 	//tiles = std::vector<oter_id>();
 	tiles.push_back(ter);
     }
+    //copy constructor
+    complex_map_tile(const complex_map_tile &tile) {
+        for (const oter_id &ter : tile.tiles) {
+	    tiles.push_back(ter);
+	}
+    }
     //Set this complex map tile to be the given terrain and only the given terrain.
     void set(const oter_id &ter) {
 	tiles.clear();

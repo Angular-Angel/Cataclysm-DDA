@@ -337,30 +337,54 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
         if (datatype == 'L') { // Load layer data, and switch to layer
             fin >> z;
 
-            std::string tmp_ter;
-            oter_id tmp_otid(0);
+            std::string tmp_str;
+            complex_map_tile tmp_tile;
+            oter_id tmp_otid(1);
             if (z >= 0 && z < OVERMAP_LAYERS) {
                 int count = 0;
                 for (int j = 0; j < OMAPY; j++) {
                     for (int i = 0; i < OMAPX; i++) {
-                        if (count == 0) {
-                            fin >> tmp_ter >> count;
-                            if( otermap.count( tmp_ter ) > 0 ) {
-                                tmp_otid = tmp_ter;
-                            } else if( tmp_ter.compare( 0, 7, "mall_a_" ) == 0 &&
-                                       otermap.count( tmp_ter + "_north" ) > 0 ) {
-                                tmp_otid = tmp_ter + "_north";
-                            } else if( tmp_ter.compare( 0, 13, "necropolis_a_" ) == 0 &&
-                                       otermap.count( tmp_ter + "_north" ) > 0 ) {
-                                tmp_otid = tmp_ter + "_north";
+                        if (tmp_str.compare("[") == 0) {
+                            tmp_tile = complex_map_tile();
+                            fin >> tmp_str;
+                            while (!tmp_str.compare("]") == 0) {
+                                if( otermap.count( tmp_str ) > 0 ) {
+                                tmp_otid = tmp_str;
+                                } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
+                                           otermap.count( tmp_str + "_north" ) > 0 ) {
+                                    tmp_otid = tmp_str + "_north";
+                                } else if( tmp_str.compare( 0, 13, "necropolis_a_" ) == 0 &&
+                                           otermap.count( tmp_str + "_north" ) > 0 ) {
+                                    tmp_otid = tmp_str + "_north";
+                                } else {
+                                    debugmsg("Loaded bad ter!  %s; ter %s", terfilename.c_str(), tmp_str.c_str());
+                                    tmp_otid = 0;
+                                }
+                                tmp_tile.add(tmp_otid);
+                                fin >> tmp_str;
+                            }
+                            layer[z].terrain[i][j] = tmp_tile;
+                            layer[z].visible[i][j] = false;
+                            fin >> tmp_str;
+                        } else if (count <= 0) {
+                            fin >> count;
+                            if( otermap.count( tmp_str ) > 0 ) {
+                                tmp_otid = tmp_str;
+                            } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
+                                       otermap.count( tmp_str + "_north" ) > 0 ) {
+                                tmp_otid = tmp_str + "_north";
+                            } else if( tmp_str.compare( 0, 13, "necropolis_a_" ) == 0 &&
+                                       otermap.count( tmp_str + "_north" ) > 0 ) {
+                                tmp_otid = tmp_str + "_north";
                             } else {
-                                debugmsg("Loaded bad ter!  %s; ter %s", terfilename.c_str(), tmp_ter.c_str());
+                                debugmsg("Loaded bad ter!  %s; ter %s", terfilename.c_str(), tmp_str.c_str());
                                 tmp_otid = 0;
                             }
+                        } else {
+                            count--;
+                            layer[z].terrain[i][j] = complex_map_tile(tmp_otid); //otermap[tmp_ter].loadid;
+                            layer[z].visible[i][j] = false;
                         }
-                        count--;
-                        layer[z].terrain[i][j] = tmp_otid; //otermap[tmp_ter].loadid;
-                        layer[z].visible[i][j] = false;
                     }
                 }
             } else {
@@ -641,16 +665,32 @@ void overmap::save() const
         oter_id last_tertype(-1);
         for (int j = 0; j < OMAPY; j++) {
             for (int i = 0; i < OMAPX; i++) {
-                oter_id t = layer[z].terrain[i][j].visible();
-                if (t != last_tertype) {
-                    if (count) {
-                        fout << count << " ";
+                complex_map_tile t = layer[z].terrain[i][j];
+                if (t.tiles.size() == 0) {
+                    debugmsg("Empty map Tile: %d, %d", i, j);
+                } else if (t.tiles.size() > 1) {
+                    last_tertype = oter_id(-1);
+                    if (count > 0) {
+                    fout << count << " ";
+                            count = 0;
                     }
-                    last_tertype = t;
-                    fout << std::string(t) << " ";
-                    count = 1;
+                    fout << "[ ";
+                    for (oter_id ter : t.tiles)
+                    {
+                        fout << std::string(ter) << " ";
+                    }
+                    fout << " ] ";
                 } else {
-                    count++;
+                    if (t.tiles[0] != last_tertype) {
+                        if (count > 0) {
+                            fout << count << " ";
+                        }
+                        last_tertype = t.tiles[0];
+                        fout << std::string(t.tiles[0]) << " ";
+                        count = 1;
+                    } else {
+                        count++;
+                    }
                 }
             }
         }
