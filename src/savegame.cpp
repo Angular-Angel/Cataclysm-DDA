@@ -337,21 +337,29 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
         if (datatype == 'L') { // Load layer data, and switch to layer
             fin >> z;
 
-            std::string tmp_str;
-            complex_map_tile tmp_tile;
-            oter_id tmp_otid(1);
-            if (z >= 0 && z < OVERMAP_LAYERS) {
-                int count = 0;
-                fin >> tmp_str;
-                for (int j = 0; j < OMAPY; j++) {
-                    for (int i = 0; i < OMAPX; i++) {
-                        if (strcmp("[", tmp_str.c_str()) == 0) {
-                            debugmsg("Got here!");
-                            tmp_tile = complex_map_tile();
-                            fin >> tmp_str;
-                            while (strcmp("]", tmp_str.c_str()) != 0) {
+            //This next chunk of code is kinda horrible. It's to load terrain, 
+            //both for complex tiles with multiple terrain and long lines of identical terrain.
+            //This means it's really clunky. In particula, making sure that it 
+            //loads additional terrain into tmp_str at all the right times and 
+            //none of the wrong ones has made the code rather convoluted, with half
+            //a dozen different calls of "fin>>tmp_str". My apologies.
+            
+            std::string tmp_str; //this variable is for storing the next string to act upon.
+            complex_map_tile tmp_tile; //this variable is for whe we need to load a complex tile.
+            oter_id tmp_otid(1); //this variable is for loading oter_ids
+            fin >> tmp_str; //we usually load at the end of a loop, so we need to "prime the pump"
+            if (z >= 0 && z < OVERMAP_LAYERS) { //does this layer actually exist?
+                int count = -1; //this variable is for when we load lots of identical tiles.
+                for (int j = 0; j < OMAPY; j++) { //for each horizontal row.
+                    for (int i = 0; i < OMAPX; i++) { //for each tile on that horizontal row
+                        if (strcmp("[", tmp_str.c_str()) == 0) { //are we loading a complex map tile?
+                            tmp_tile = complex_map_tile(); //we're loading a complex map tile.
+                            count = -1; //we're not loading identical tiles right now. 
+                            fin >> tmp_str; //gotta prime that pump again.
+                            while (strcmp("]", tmp_str.c_str()) != 0) { //loop until the end of this complex map tile is reached.
+                                //this code is just for figuring out what oter_id we need.
                                 if( otermap.count( tmp_str ) > 0 ) {
-                                tmp_otid = tmp_str;
+                                    tmp_otid = tmp_str;
                                 } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
                                            otermap.count( tmp_str + "_north" ) > 0 ) {
                                     tmp_otid = tmp_str + "_north";
@@ -362,22 +370,16 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
                                     debugmsg("Loaded bad ter!  %s; ter %s", terfilename.c_str(), tmp_str.c_str());
                                     tmp_otid = 0;
                                 }
-                                tmp_tile.add(tmp_otid);
-                                fin >> tmp_str;
+                                tmp_tile.add(tmp_otid); //add the oter_id to our complex_map_tile
+                                fin >> tmp_str; //load the next str.
                             }
-                            layer[z].terrain[i][j] = tmp_tile;
-                            layer[z].visible[i][j] = false;
-                            fin >> tmp_str;
+                            layer[z].terrain[i][j] = tmp_tile; //add the complex_map_tile to our overmap.
+                            layer[z].visible[i][j] = false; //
+                            fin >> tmp_str; //more pump priming
                         } else if (count <= 0) {
-                            fin >> count;
-                            if (count > 0)
-                            debugmsg("Got there! %d", count);
-                            else {
-                                //fin >> tmp_str;
-                                debugmsg("What is this!? %s", tmp_str.c_str());
-                                continue;
-                            }
-                                
+                            //now we're loading lot of identical tiles.
+                            fin >> count; //how many are we loading?
+                            //set the oter_id we'll be using. 
                             if( otermap.count( tmp_str ) > 0 ) {
                                 tmp_otid = tmp_str;
                             } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
@@ -390,12 +392,15 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
                                 debugmsg("Loaded bad ter!  %s; ter %s", terfilename.c_str(), tmp_str.c_str());
                                 tmp_otid = 0;
                             }
-                        } else {
-                            //debugmsg("Got this place!");
-                            count--;
-                            layer[z].terrain[i][j] = complex_map_tile(tmp_otid); //otermap[tmp_ter].loadid;
+                        }
+                        if (count > 0) { //are we loading lot of identical tiles?
+                            count--; //one less tile to load.
+                            layer[z].terrain[i][j] = complex_map_tile(tmp_otid); //add the terrain to the overmap.
                             layer[z].visible[i][j] = false;
                         }
+                        //did we just finish loading a bunch of identical tiles, but not reach the end of the Overmap?
+                        //if so, load another tile.
+                        if (count == 0 && (j < OMAPY-1 ||  i < OMAPX -1)) fin >> tmp_str;
                     }
                 }
             } else {
