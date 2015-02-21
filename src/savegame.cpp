@@ -342,12 +342,14 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
             oter_id tmp_otid(1);
             if (z >= 0 && z < OVERMAP_LAYERS) {
                 int count = 0;
+                fin >> tmp_str;
                 for (int j = 0; j < OMAPY; j++) {
                     for (int i = 0; i < OMAPX; i++) {
-                        if (tmp_str.compare("[") == 0) {
+                        if (strcmp("[", tmp_str.c_str()) == 0) {
+                            debugmsg("Got here!");
                             tmp_tile = complex_map_tile();
                             fin >> tmp_str;
-                            while (!tmp_str.compare("]") == 0) {
+                            while (strcmp("]", tmp_str.c_str()) != 0) {
                                 if( otermap.count( tmp_str ) > 0 ) {
                                 tmp_otid = tmp_str;
                                 } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
@@ -368,6 +370,14 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
                             fin >> tmp_str;
                         } else if (count <= 0) {
                             fin >> count;
+                            if (count > 0)
+                            debugmsg("Got there! %d", count);
+                            else {
+                                //fin >> tmp_str;
+                                debugmsg("What is this!? %s", tmp_str.c_str());
+                                continue;
+                            }
+                                
                             if( otermap.count( tmp_str ) > 0 ) {
                                 tmp_otid = tmp_str;
                             } else if( tmp_str.compare( 0, 7, "mall_a_" ) == 0 &&
@@ -381,6 +391,7 @@ void overmap::unserialize(std::ifstream & fin, std::string const & plrfilename,
                                 tmp_otid = 0;
                             }
                         } else {
+                            //debugmsg("Got this place!");
                             count--;
                             layer[z].terrain[i][j] = complex_map_tile(tmp_otid); //otermap[tmp_ter].loadid;
                             layer[z].visible[i][j] = false;
@@ -679,7 +690,7 @@ void overmap::save() const
                     {
                         fout << std::string(ter) << " ";
                     }
-                    fout << " ] ";
+                    fout << "] ";
                 } else {
                     if (t.tiles[0] != last_tertype) {
                         if (count > 0) {
