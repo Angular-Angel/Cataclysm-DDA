@@ -266,8 +266,7 @@ struct complex_map_tile {
     }
     //same as above except using string
     void set(const char *ter) {
-	tiles.clear();
-	tiles.push_back(oter_id(ter));
+	set(oter_id(ter));
     }
     //checks to see if they given terrain is present on this tile.
     bool has(const oter_id &ter) const {
@@ -283,13 +282,31 @@ struct complex_map_tile {
 	}
 	return false;
     }
+    //checks to see if any of the tiles here are roads.
+    bool has_road() {
+        for (const oter_id &ter : tiles) {
+	    if (ter.t().is_road) return true;
+	}
+	return false;
+    }
     //adds the given terrain on top of this tile.
     void add(const oter_id &ter) {
+        if (ter.t().is_road && has_road()) {
+            for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
+                if (it.base()->t().is_road) { 
+                    tiles.erase(it);
+                    break;
+                }
+            }
+            tiles.push_back(ter);
+            return;
+
+        }
         if (!has(ter)) tiles.push_back(ter);
     }
     //same as above but uses string
     void add(const char *ter) {
-        if (!has(ter)) tiles.push_back(oter_id(ter));
+        add(oter_id(ter));
     }
     //returns the terrain that is most visible
     oter_id visible() const {

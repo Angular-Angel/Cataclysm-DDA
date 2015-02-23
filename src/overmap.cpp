@@ -20,6 +20,7 @@
 #include "input.h"
 #include "json.h"
 #include <queue>
+#include <bits/basic_string.h>
 #include "mapdata.h"
 #include "mapgen.h"
 #include "uistate.h"
@@ -287,8 +288,8 @@ map_extras &get_extras(const std::string &name)
 // oter_t specific affirmatives to is_road, set at startup (todo; jsonize)
 bool isroad(std::string bstr)
 {
-    if (bstr == "road" || bstr == "bridge" ||
-        bstr == "subway" || bstr == "sewer" ||
+    if (bstr == "road" || bstr == "road_nesw_manhole" || bstr == "bridge" ||
+        bstr == "subway" || bstr == "sewer" || bstr == "road_end" ||
         bstr == "sewage_treatment_hub" ||
         bstr == "sewage_treatment_under" ||
         bstr == "rift" || bstr == "hellmouth") {
@@ -339,7 +340,7 @@ void load_overmap_terrain_mapgens(JsonObject &jo, const std::string id_base,
         }
     }
 }
-
+//this function loads an overmap terrain from a JsonObject.
 void load_overmap_terrain(JsonObject &jo)
 {
     oter_t oter;
@@ -1188,24 +1189,24 @@ bool overmap::generate_sub(int const z)
             }
 
             if (is_ot_type("house_base", oter_above)) {
-                ter(i, j, z).set("basement");
+                ter(i, j, z).add("basement");
             } else if (is_ot_type("sub_station", oter_above)) {
-                ter(i, j, z).set("subway_nesw");
+                ter(i, j, z).add("subway_nesw");
                 subway_points.push_back(city(i, j, 0));
             } else if (oter_above.has("road_nesw_manhole")) {
-                ter(i, j, z).set("sewer_nesw");
+                ter(i, j, z).add("sewer_nesw");
                 sewer_points.push_back(city(i, j, 0));
             } else if (oter_above.has("sewage_treatment")) {
                 sewer_points.push_back(city(i, j, 0));
             } else if (oter_above.has("cave") && z == -1) {
                 if (one_in(3)) {
-                    ter(i, j, z).set("cave_rat");
+                    ter(i, j, z).add("cave_rat");
                     requires_sub = true; // rat caves are two level
                 } else {
-                    ter(i, j, z).set("cave");
+                    ter(i, j, z).add("cave");
                 }
             } else if (oter_above.has("cave_rat") && z == -2) {
-                ter(i, j, z).set("cave_rat");
+                ter(i, j, z).add("cave_rat");
             } else if (oter_above.has("anthill")) {
                 int size = rng(MIN_ANT_SIZE, MAX_ANT_SIZE);
                 ant_points.push_back(city(i, j, size));
@@ -1214,22 +1215,22 @@ bool overmap::generate_sub(int const z)
                 int size = rng(MIN_GOO_SIZE, MAX_GOO_SIZE);
                 goo_points.push_back(city(i, j, size));
             } else if (oter_above.has("forest_water")) {
-                ter(i, j, z).set("cavern");
+                ter(i, j, z).add("cavern");
             } else if (oter_above.has("lab_core") ||
                        (z == -1 && oter_above.has("lab_stairs"))) {
                 lab_points.push_back(city(i, j, rng(1, 5 + z)));
             } else if (oter_above.has("lab_stairs")) {
-                ter(i, j, z).set("lab");
+                ter(i, j, z).add("lab");
             } else if (oter_above.has("ice_lab_core") ||
                        (z == -1 && oter_above.has("ice_lab_stairs"))) {
                 ice_lab_points.push_back(city(i, j, rng(1, 5 + z)));
             } else if (oter_above.has("ice_lab_stairs")) {
-                ter(i, j, z).set("ice_lab");
+                ter(i, j, z).add("ice_lab");
             } else if (oter_above.has("mine_entrance")) {
                 shaft_points.push_back( point(i, j) );
             } else if (oter_above.has("mine_shaft") ||
                        oter_above.has("mine_down")    ) {
-                ter(i, j, z).set("mine");
+                ter(i, j, z).add("mine");
                 mine_points.push_back(city(i, j, rng(6 + z, 10 + z)));
                 // technically not all finales need a sub level,
                 // but at this point we don't know
@@ -1237,16 +1238,16 @@ bool overmap::generate_sub(int const z)
             } else if (oter_above.has("mine_finale")) {
                 for (int x = i - 1; x <= i + 1; x++) {
                     for (int y = j - 1; y <= j + 1; y++) {
-                        ter(x, y, z).set("spiral");
+                        ter(x, y, z).add("spiral");
                     }
                 }
-                ter(i, j, z).set("spiral_hub");
+                ter(i, j, z).add("spiral_hub");
                 add_mon_group(mongroup("GROUP_SPIRAL", i * 2, j * 2, z, 2, 200));
             } else if (oter_above.has("silo")) {
                 if (rng(2, 7) < abs(z) || rng(2, 7) < abs(z)) {
-                    ter(i, j, z).set("silo_finale");
+                    ter(i, j, z).add("silo_finale");
                 } else {
-                    ter(i, j, z).set("silo");
+                    ter(i, j, z).add("silo");
                     requires_sub = true;
                 }
             }
@@ -1260,20 +1261,20 @@ bool overmap::generate_sub(int const z)
     polish(z, "sewer");
     place_hiways(subway_points, z, "subway");
     for (auto &i : subway_points) {
-        ter(i.x, i.y, z).set("subway_station");
+        ter(i.x, i.y, z).add("subway_station");
     }
     for (auto &i : lab_points) {
         bool lab = build_lab(i.x, i.y, z, i.s);
         requires_sub |= lab;
         if (!lab && ter(i.x, i.y, z).has("lab_core")) {
-            ter(i.x, i.y, z).set("lab");
+            ter(i.x, i.y, z).add("lab");
         }
     }
     for (auto &i : ice_lab_points) {
         bool ice_lab = build_ice_lab(i.x, i.y, z, i.s);
         requires_sub |= ice_lab;
         if (!ice_lab && ter(i.x, i.y, z).has("ice_lab_core")) {
-            ter(i.x, i.y, z).set("ice_lab");
+            ter(i.x, i.y, z).add("ice_lab");
         }
     }
     for (auto &i : ant_points) {
@@ -1297,7 +1298,7 @@ bool overmap::generate_sub(int const z)
     }
 
     for (auto &i : shaft_points) {
-        ter(i.x, i.y, z).set("mine_shaft");
+        ter(i.x, i.y, z).add("mine_shaft");
         requires_sub = true;
     }
     return requires_sub;
@@ -1777,7 +1778,8 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
 	        mvwputch(wbar, j + 1, 1, otermap[tile_ter].color, otermap[tile_ter].sym);
 		//std::vector<std::string> name = foldstring(otermap[tile_ter].name, 25);
                 //size_t offset = 0;
-                mvwprintz(wbar, j + 1, 3, otermap[tile_ter].color, "%s", otermap[tile_ter].name.c_str());
+                mvwprintz(wbar, j + 1, 3, otermap[tile_ter].color, "%s: %s", otermap[tile_ter].name.c_str(), 
+                        tile_ter.t().id_base.c_str());
 		//for (size_t i = 0; i < name.size(); i++) {
                     //if (i > 0) offset += 1;
 		    
@@ -1786,7 +1788,6 @@ void overmap::draw(WINDOW *w, WINDOW *wbar, const tripoint &center,
         }
     } else {
         mvwprintz(wbar, 1, 1, c_dkgray, _("# Unexplored"));
-        mvwprintz(wbar, 4, 1, c_dkgray, _("# Unexplored"));
     }
 
     if (has_target) {
@@ -2327,7 +2328,7 @@ void overmap::place_cities()
             size = village_size;
         }
         if (ter(cx, cy, 0).equals(settings.default_oter) ) {
-            ter(cx, cy, 0).set("road_nesw");
+            ter(cx, cy, 0).add("road_nesw");
             city tmp;
             tmp.x = cx;
             tmp.y = cy;
@@ -2455,7 +2456,7 @@ void overmap::make_road(int x, int y, int cs, int dir, city town)
 bool overmap::build_lab(int x, int y, int z, int s)
 {
     std::vector<point> generated_lab;
-    ter(x, y, z).set("lab");
+    ter(x, y, z).add("lab");
     for (int n = 0; n <= 1; n++) { // Do it in two passes to allow diagonals
         for (int i = 1; i <= s; i++) {
             for (int lx = x - i; lx <= x + i; lx++) {
@@ -2481,10 +2482,10 @@ bool overmap::build_lab(int x, int y, int z, int s)
     if (generate_stairs && !generated_lab.empty()) {
         int v = rng(0, generated_lab.size() - 1);
         point p = generated_lab[v];
-        ter(p.x, p.y, z + 1).set("lab_stairs");
+        ter(p.x, p.y, z + 1).add("lab_stairs");
     }
 
-    ter(x, y, z).set("lab_core");
+    ter(x, y, z).add("lab_core");
     int numstairs = 0;
     if (s > 0) { // Build stairs going down
         while (!one_in(6)) {
@@ -2496,7 +2497,7 @@ bool overmap::build_lab(int x, int y, int z, int s)
                 tries++;
             } while (!ter(stairx, stairy, z).has("lab") && tries < 15);
             if (tries < 15) {
-                ter(stairx, stairy, z).set("lab_stairs");
+                ter(stairx, stairy, z).add("lab_stairs");
                 numstairs++;
             }
         }
@@ -2510,7 +2511,7 @@ bool overmap::build_lab(int x, int y, int z, int s)
             tries++;
         } while (tries < 15 && !ter(finalex, finaley, z).has("lab")
                  && !ter(finalex, finaley, z).has("lab_core"));
-        ter(finalex, finaley, z).set("lab_finale");
+        ter(finalex, finaley, z).add("lab_finale");
     }
 
     return numstairs > 0;
@@ -2519,7 +2520,7 @@ bool overmap::build_lab(int x, int y, int z, int s)
 bool overmap::build_ice_lab(int x, int y, int z, int s)
 {
     std::vector<point> generated_ice_lab;
-    ter(x, y, z).set("ice_lab");
+    ter(x, y, z).add("ice_lab");
     for (int n = 0; n <= 1; n++) { // Do it in two passes to allow diagonals
         for (int i = 1; i <= s; i++) {
             for (int lx = x - i; lx <= x + i; lx++) {
@@ -2528,7 +2529,7 @@ bool overmap::build_ice_lab(int x, int y, int z, int s)
                          ter(lx + 1, ly, z).has("ice_lab") ||
                          ter(lx, ly - 1, z).has("ice_lab") ||
                          ter(lx, ly + 1, z).has("ice_lab")) && one_in(i)) {
-                        ter(lx, ly, z).set("ice_lab");
+                        ter(lx, ly, z).add("ice_lab");
                         generated_ice_lab.push_back(point(lx, ly));
                     }
                 }
@@ -2545,10 +2546,10 @@ bool overmap::build_ice_lab(int x, int y, int z, int s)
     if (generate_stairs && !generated_ice_lab.empty()) {
         int v = rng(0, generated_ice_lab.size() - 1);
         point p = generated_ice_lab[v];
-        ter(p.x, p.y, z + 1).set("ice_lab_stairs");
+        ter(p.x, p.y, z + 1).add("ice_lab_stairs");
     }
 
-    ter(x, y, z).set("ice_lab_core");
+    ter(x, y, z).add("ice_lab_core");
     int numstairs = 0;
     if (s > 0) { // Build stairs going down
         while (!one_in(6)) {
@@ -2560,7 +2561,7 @@ bool overmap::build_ice_lab(int x, int y, int z, int s)
                 tries++;
             } while (!ter(stairx, stairy, z).has("ice_lab") && tries < 15);
             if (tries < 15) {
-                ter(stairx, stairy, z).set("ice_lab_stairs");
+                ter(stairx, stairy, z).add("ice_lab_stairs");
                 numstairs++;
             }
         }
@@ -2574,7 +2575,7 @@ bool overmap::build_ice_lab(int x, int y, int z, int s)
             tries++;
         } while (tries < 15 && !ter(finalex, finaley, z).has("ice_lab")
                  && !ter(finalex, finaley, z).has("ice_lab_core"));
-        ter(finalex, finaley, z).set("ice_lab_finale");
+        ter(finalex, finaley, z).add("ice_lab_finale");
     }
 
     return numstairs > 0;
@@ -2686,7 +2687,7 @@ void overmap::build_mine(int x, int y, int z, int s)
         s = 2;
     }
     while (built < s) {
-        ter(x, y, z).set("mine");
+        ter(x, y, z).add("mine");
         std::vector<point> next;
         for (int i = -1; i <= 1; i += 2) {
             if (ter(x, y + i, z).equals("rock")) {
@@ -2697,7 +2698,7 @@ void overmap::build_mine(int x, int y, int z, int s)
             }
         }
         if (next.empty()) { // Dead end!  Go down!
-            ter(x, y, z).set((finale ? "mine_finale" : "mine_down"));
+            ter(x, y, z).add((finale ? "mine_finale" : "mine_down"));
             return;
         }
         point p = next[ rng(0, next.size() - 1) ];
@@ -2705,7 +2706,7 @@ void overmap::build_mine(int x, int y, int z, int s)
         y = p.y;
         built++;
     }
-    ter(x, y, z).set((finale ? "mine_finale" : "mine_down"));
+    ter(x, y, z).add((finale ? "mine_finale" : "mine_down"));
 }
 
 void overmap::place_rifts(int const z)
@@ -2730,9 +2731,9 @@ void overmap::place_rifts(int const z)
             }
             for (size_t i = 0; i < riftline.size(); i++) {
                 if (i == riftline.size() / 2 && !one_in(3)) {
-                    ter(riftline[i].x, riftline[i].y, z).set("hellmouth");
+                    ter(riftline[i].x, riftline[i].y, z).add("hellmouth");
                 } else {
-                    ter(riftline[i].x, riftline[i].y, z).set("rift");
+                    ter(riftline[i].x, riftline[i].y, z).add("rift");
                 }
             }
         }
@@ -2868,12 +2869,12 @@ void overmap::building_on_hiway(int x, int y, int dir)
     switch (rng(1, 4)) {
     case 1:
         if (!is_river(ter(x + xdif, y + ydif, 0))) {
-            ter(x + xdif, y + ydif, 0).set("lab_stairs");
+            ter(x + xdif, y + ydif, 0).add("lab_stairs");
         }
         break;
     case 2:
         if (!is_river(ter(x + xdif, y + ydif, 0))) {
-            ter(x + xdif, y + ydif, 0).set("ice_lab_stairs");
+            ter(x + xdif, y + ydif, 0).add("ice_lab_stairs");
         }
         break;
     case 3:
