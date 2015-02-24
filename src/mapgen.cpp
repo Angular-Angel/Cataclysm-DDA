@@ -3130,8 +3130,8 @@ C..C..C...|hhh|#########\n\
                         ((j < tw || j > SEEY * 2 - 1 - bw) && i > SEEX - 3 && i < SEEX + 2)) {
                         ter_set(i, j, t_sewage);
                     }
-                    if ((i == 0 && is_lab(t_east, "science")) ||
-                        (i == 0 && is_lab(t_east, "ice")) ||
+                    if ((i == 0 && has_lab(t_east, "science")) ||
+                        (i == 0 && has_lab(t_east, "ice")) ||
                         i == SEEX * 2 - 1) {
                         if (ter(i, j) == t_sewage) {
                             ter_set(i, j, t_bars);
@@ -3140,8 +3140,8 @@ C..C..C...|hhh|#########\n\
                         } else {
                             ter_set(i, j, t_concrete_v);
                         }
-                    } else if ((j == 0 && is_lab(t_north, "science")) ||
-                               (j == 0 && is_lab(t_north, "ice")) ||
+                    } else if ((j == 0 && has_lab(t_north, "science")) ||
+                               (j == 0 && has_lab(t_north, "ice")) ||
                                j == SEEY * 2 - 1) {
                         if (ter(i, j) == t_sewage) {
                             ter_set(i, j, t_bars);

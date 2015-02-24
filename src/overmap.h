@@ -285,22 +285,31 @@ struct complex_map_tile {
     //checks to see if any of the tiles here are roads.
     bool has_road() {
         for (const oter_id &ter : tiles) {
-	    if (ter.t().is_road) return true;
+	    if (ter.t().has_flag(is_road)) return true;
 	}
 	return false;
     }
-    //adds the given terrain on top of this tile.
+    //adds the given terrain on top of this tile, after checking to make sure it doesn't
+    //conflict with any terrain already present. Roads overwrite previous roads.
     void add(const oter_id &ter) {
-        if (ter.t().is_road && has_road()) {
-            for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
-                if (it.base()->t().is_road) { 
-                    tiles.erase(it);
-                    break;
+        if (ter.t().has_flag(is_asphalt)) {
+            if (has_flag(is_building)) {
+                return;
+            } else if (has_flag(is_asphalt)) {
+                for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
+                    if (it.base()->t().has_flag(is_asphalt)) { 
+                        tiles.erase(it);
+                        break;
+                    }
                 }
+                tiles.push_back(ter);
+                return;
             }
             tiles.push_back(ter);
-            return;
-
+        }
+        if (ter.t().has_flag(is_building)) {
+            if (has_flag(is_building) || has_flag(is_asphalt)) return;
+            else tiles.push_back(ter);
         }
         if (!has(ter)) tiles.push_back(ter);
     }
@@ -325,8 +334,7 @@ struct complex_map_tile {
     }
     //as above, except uses std::string
     bool equals(const std::string &ter) const {
-        if (tiles.size() == 1 && tiles[0] == ter.c_str()) return true;
-	else return false;
+        return equals(ter.c_str());
     }
     //returns a value for how hard it is to see through this tile.
     unsigned char see_cost() const {
@@ -344,21 +352,22 @@ struct complex_map_tile {
 	}
         return ret;
     }
-    //
-    bool sidewalk() const {
-        for (const oter_id &ter : tiles) {
-	    if (otermap[ter].sidewalk) return true;
-	}
-        return false;
-    }
     //returns the map extras for this map.
     std::string extras() const {
         return otermap[visible()].extras;
     }
-    //returs the static spawns to be found on this tile
+    //returns the static spawns to be found on this tile
     overmap_spawns static_spawns() const {
         return otermap[visible()].static_spawns;
     }
+    //returns true if any tile here has the given flag.
+    bool has_flag(oter_flags flag) const {
+        for (const oter_id &ter : tiles) {
+	    if (ter.t().has_flag(flag)) return true;
+	}
+        return false;
+    }
+    
 };
 
 struct map_layer { //represents a layer of an overmap.
@@ -566,7 +575,7 @@ public:
   // Polishing
   bool check_ot_type(const std::string &otype, int x, int y, int z) const;
   bool check_ot_type_road(const std::string &otype, int x, int y, int z);
-  bool is_road(int x, int y, int z);
+  bool has_road(int x, int y, int z);
   void polish(const int z, const std::string &terrain_type="all");
   void good_road(const std::string &base, int x, int y, int z);
   void good_river(int x, int y, int z);
@@ -601,10 +610,9 @@ void reset_region_settings();
 
 void finalize_overmap_terrain();
 
-bool is_river(const complex_map_tile &tile);
-bool is_river(const oter_id &ter);
+bool has_river(const complex_map_tile &tile);
 
-bool is_lab(const complex_map_tile &tile, const char *str);
+bool has_lab(const complex_map_tile &tile, const char *str);
 bool is_lab(const oter_id &ter, const char *str);
 
 bool is_subway_station(const complex_map_tile &tile);

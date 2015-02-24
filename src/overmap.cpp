@@ -24,6 +24,7 @@
 #include "mapdata.h"
 #include "mapgen.h"
 #include "uistate.h"
+#include "omdata.h"
 #define dbg(x) DebugLog((DebugLevel)(x),D_MAP_GEN) << __FILE__ << ":" << __LINE__ << ": "
 
 #define STREETCHANCE 2
@@ -142,24 +143,16 @@ void clear_overmap_specials()
     overmap_specials.clear();
 }
 
-bool is_river(const complex_map_tile &tile)
+bool has_river(const complex_map_tile &tile)
 {
     for (const oter_id &ter : tile.tiles) {
-        if (is_river(ter)) return true;
+        if (ter.t().has_flag(is_river)) return true;
     }
     return false;
 }
 
-bool is_river(const oter_id &ter)
-{
-    // if the id starts with "river" or "bridge", count as a river, but this
-    // is done in data init.
-    // return (ter.compare(0,5,"river",5) == 0 || ter.compare(0,6,"bridge",6) == 0);
-    return ter.t().is_river;
-}
-
 //checks to see if the given tile is a lab.
-bool is_lab(const complex_map_tile &tile, const char *str = "")
+bool has_lab(const complex_map_tile &tile, const char *str = "")
 {
     for (const oter_id &ter : tile.tiles)
     {
@@ -230,7 +223,7 @@ bool road_allowed(const complex_map_tile &tile)
 //check a particular kind of oter to see if it allows roads.
 bool road_allowed(const oter_id &ter)
 {
-    return ter.t().allow_road;
+    return ter.t().has_flag(allow_road);
 }
 
 /*
@@ -371,11 +364,11 @@ void load_overmap_terrain(JsonObject &jo)
     oter.see_cost = jo.get_int("see_cost");
 
     oter.extras = jo.get_string("extras", "none");
-    oter.known_down = jo.get_bool("known_down", false);
-    oter.known_up = jo.get_bool("known_up", false);
+    oter.set_flag(known_down, jo.get_bool("known_down", false));
+    oter.set_flag(known_up, jo.get_bool("known_up", false));
     oter.mondensity = jo.get_int("mondensity", 0);
-    oter.sidewalk = jo.get_bool("sidewalk", false);
-    oter.allow_road = jo.get_bool("allow_road", false);
+    oter.set_flag(has_sidewalk, jo.get_bool("sidewalk", false));
+    oter.set_flag(allow_road, jo.get_bool("allow_road", false));
 
     std::string id_base = oter.id;
     int start_iid = oterlist.size();
@@ -390,10 +383,11 @@ void load_overmap_terrain(JsonObject &jo)
         oter.static_spawns.max_population = spawns.get_array( "population" ).get_int( 1 );
         oter.static_spawns.chance = spawns.get_int( "chance" );
     }
+    
+    oter.set_flag(is_asphalt, jo.get_bool("asphalt", false));
 
-    oter.is_road = isroad(id_base);
-    oter.is_river = (id_base.compare(0, 5, "river", 5) == 0 ||
-                     id_base.compare(0, 6, "bridge", 6) == 0);
+    oter.set_flag(is_road, isroad(id_base));
+    oter.set_flag(is_river, (id_base.compare(0, 5, "river", 5) == 0));
 
     oter.id_mapgen = id_base; // What, another identifier? Whyyy...
     if ( ! oter.line_drawing ) { // ...oh
@@ -930,12 +924,12 @@ void overmap::generate(const overmap *north, const overmap *east,
 
     if (north != NULL) {
         for (int i = 2; i < OMAPX - 2; i++) {
-            if (is_river(north->get_ter(i, OMAPY - 1, 0))) {
+            if (has_river(north->get_ter(i, OMAPY - 1, 0))) {
                 ter(i, 0, 0).set(river_center);
             }
-            if (is_river(north->get_ter(i, OMAPY - 1, 0)) &&
-                is_river(north->get_ter(i - 1, OMAPY - 1, 0)) &&
-                is_river(north->get_ter(i + 1, OMAPY - 1, 0))) {
+            if (has_river(north->get_ter(i, OMAPY - 1, 0)) &&
+                has_river(north->get_ter(i - 1, OMAPY - 1, 0)) &&
+                has_river(north->get_ter(i + 1, OMAPY - 1, 0))) {
                 if (river_start.empty() ||
                     river_start[river_start.size() - 1].x < i - 6) {
                     river_start.push_back(point(i, 0));
@@ -951,12 +945,12 @@ void overmap::generate(const overmap *north, const overmap *east,
     size_t rivers_from_north = river_start.size();
     if (west != NULL) {
         for (int i = 2; i < OMAPY - 2; i++) {
-            if (is_river(west->get_ter(OMAPX - 1, i, 0))) {
+            if (has_river(west->get_ter(OMAPX - 1, i, 0))) {
                 ter(0, i, 0).set(river_center);
             }
-            if (is_river(west->get_ter(OMAPX - 1, i, 0)) &&
-                is_river(west->get_ter(OMAPX - 1, i - 1, 0)) &&
-                is_river(west->get_ter(OMAPX - 1, i + 1, 0))) {
+            if (has_river(west->get_ter(OMAPX - 1, i, 0)) &&
+                has_river(west->get_ter(OMAPX - 1, i - 1, 0)) &&
+                has_river(west->get_ter(OMAPX - 1, i + 1, 0))) {
                 if (river_start.size() == rivers_from_north ||
                     river_start[river_start.size() - 1].y < i - 6) {
                     river_start.push_back(point(0, i));
@@ -971,12 +965,12 @@ void overmap::generate(const overmap *north, const overmap *east,
     }
     if (south != NULL) {
         for (int i = 2; i < OMAPX - 2; i++) {
-            if (is_river(south->get_ter(i, 0, 0))) {
+            if (has_river(south->get_ter(i, 0, 0))) {
                 ter(i, OMAPY - 1, 0).set(river_center);
             }
-            if (is_river(south->get_ter(i,     0, 0)) &&
-                is_river(south->get_ter(i - 1, 0, 0)) &&
-                is_river(south->get_ter(i + 1, 0, 0))) {
+            if (has_river(south->get_ter(i,     0, 0)) &&
+                has_river(south->get_ter(i - 1, 0, 0)) &&
+                has_river(south->get_ter(i + 1, 0, 0))) {
                 if (river_end.empty() ||
                     river_end[river_end.size() - 1].x < i - 6) {
                     river_end.push_back(point(i, OMAPY - 1));
@@ -995,12 +989,12 @@ void overmap::generate(const overmap *north, const overmap *east,
     size_t rivers_to_south = river_end.size();
     if (east != NULL) {
         for (int i = 2; i < OMAPY - 2; i++) {
-            if (is_river(east->get_ter(0, i, 0))) {
+            if (has_river(east->get_ter(0, i, 0))) {
                 ter(OMAPX - 1, i, 0).set(river_center);
             }
-            if (is_river(east->get_ter(0, i, 0)) &&
-                is_river(east->get_ter(0, i - 1, 0)) &&
-                is_river(east->get_ter(0, i + 1, 0))) {
+            if (has_river(east->get_ter(0, i, 0)) &&
+                has_river(east->get_ter(0, i - 1, 0)) &&
+                has_river(east->get_ter(0, i + 1, 0))) {
                 if (river_end.size() == rivers_to_south ||
                     river_end[river_end.size() - 1].y < i - 6) {
                     river_end.push_back(point(OMAPX - 1, i));
@@ -1094,29 +1088,29 @@ void overmap::generate(const overmap *north, const overmap *east,
         if (north == NULL) {
             do {
                 tmp = rng(10, OMAPX - 11);
-            } while (is_river(ter(tmp, 0, 0)) || is_river(ter(tmp - 1, 0, 0)) ||
-                     is_river(ter(tmp + 1, 0, 0)) );
+            } while (has_river(ter(tmp, 0, 0)) || has_river(ter(tmp - 1, 0, 0)) ||
+                     has_river(ter(tmp + 1, 0, 0)) );
             viable_roads.push_back(city(tmp, 0, 0));
         }
         if (east == NULL) {
             do {
                 tmp = rng(10, OMAPY - 11);
-            } while (is_river(ter(OMAPX - 1, tmp, 0)) || is_river(ter(OMAPX - 1, tmp - 1, 0)) ||
-                     is_river(ter(OMAPX - 1, tmp + 1, 0)));
+            } while (has_river(ter(OMAPX - 1, tmp, 0)) || has_river(ter(OMAPX - 1, tmp - 1, 0)) ||
+                     has_river(ter(OMAPX - 1, tmp + 1, 0)));
             viable_roads.push_back(city(OMAPX - 1, tmp, 0));
         }
         if (south == NULL) {
             do {
                 tmp = rng(10, OMAPX - 11);
-            } while (is_river(ter(tmp, OMAPY - 1, 0)) || is_river(ter(tmp - 1, OMAPY - 1, 0)) ||
-                     is_river(ter(tmp + 1, OMAPY - 1, 0)));
+            } while (has_river(ter(tmp, OMAPY - 1, 0)) || has_river(ter(tmp - 1, OMAPY - 1, 0)) ||
+                     has_river(ter(tmp + 1, OMAPY - 1, 0)));
             viable_roads.push_back(city(tmp, OMAPY - 1, 0));
         }
         if (west == NULL) {
             do {
                 tmp = rng(10, OMAPY - 11);
-            } while (is_river(ter(0, tmp, 0)) || is_river(ter(0, tmp - 1, 0)) ||
-                     is_river(ter(0, tmp + 1, 0)));
+            } while (has_river(ter(0, tmp, 0)) || has_river(ter(0, tmp - 1, 0)) ||
+                     has_river(ter(0, tmp + 1, 0)));
             viable_roads.push_back(city(0, tmp, 0));
         }
         while (roads_out.size() < 2 && !viable_roads.empty()) {
@@ -2432,7 +2426,7 @@ void overmap::make_road(int x, int y, int cs, int dir, city town)
         }
     }
     // Now we're done growing, if there's a road ahead, add one more road segment to meet it.
-    if (is_road(x + (2 * dirx) , y + (2 * diry), 0)) {
+    if (has_road(x + (2 * dirx) , y + (2 * diry), 0)) {
         ter(x + dirx, y + diry, 0).add("road_ns");
     }
 
@@ -2779,7 +2773,7 @@ void overmap::make_hiway(int x1, int y1, int x2, int y2, int z, const std::strin
                 x += dx[d];
                 y += dy[d];
                 if (road_allowed(ter(x, y, z))) {
-                    if (is_river(ter(x, y, z))) {
+                    if (has_river(ter(x, y, z))) {
                         if (d == 1 || d == 3) {
                             ter(x, y, z).add("bridge_ns");
                         } else {
@@ -2804,8 +2798,8 @@ void overmap::make_hiway(int x1, int y1, int x2, int y2, int z, const std::strin
             // * corners on rivers
             if (x < 1 || x > OMAPX - 2 || y < 1 || y > OMAPY - 2 ||
                 closed[x][y] || !road_allowed(ter(x, y, z)) ||
-                (is_river(ter(mn.x, mn.y, z)) && mn.d != d) ||
-                (is_river(ter(x,    y,    z)) && mn.d != d) ) {
+                (has_river(ter(mn.x, mn.y, z)) && mn.d != d) ||
+                (has_river(ter(x,    y,    z)) && mn.d != d) ) {
                 continue;
             }
 
@@ -2815,7 +2809,7 @@ void overmap::make_hiway(int x1, int y1, int x2, int y2, int z, const std::strin
             // prefer existing roads.
             cn.p += check_ot_type(base, x, y, z) ? 0 : 3;
             // and flat land over bridges
-            cn.p += !is_river(ter(x, y, z)) ? 0 : 2;
+            cn.p += !has_river(ter(x, y, z)) ? 0 : 2;
             // try not to turn too much
             //cn.p += (mn.d == d) ? 0 : 1;
 
@@ -2868,22 +2862,22 @@ void overmap::building_on_hiway(int x, int y, int dir)
 
     switch (rng(1, 4)) {
     case 1:
-        if (!is_river(ter(x + xdif, y + ydif, 0))) {
+        if (!has_river(ter(x + xdif, y + ydif, 0))) {
             ter(x + xdif, y + ydif, 0).add("lab_stairs");
         }
         break;
     case 2:
-        if (!is_river(ter(x + xdif, y + ydif, 0))) {
+        if (!has_river(ter(x + xdif, y + ydif, 0))) {
             ter(x + xdif, y + ydif, 0).add("ice_lab_stairs");
         }
         break;
     case 3:
-        if (!is_river(ter(x + xdif, y + ydif, 0))) {
+        if (!has_river(ter(x + xdif, y + ydif, 0))) {
             ter(x + xdif, y + ydif, 0).add(house(rot, settings.house_basement_chance));
         }
         break;
     case 4:
-        if (!is_river(ter(x + xdif, y + ydif, 0))) {
+        if (!has_river(ter(x + xdif, y + ydif, 0))) {
             ter(x + xdif, y + ydif, 0).add("radio_tower");
         }
         break;
@@ -2929,6 +2923,7 @@ void overmap::polish(const int z, const std::string &terrain_type)
                 } else if (check_ot_type("subway", x, y, z)) {
                     good_road("subway", x, y, z);
                 } else if (check_ot_type("sewer", x, y, z)) {
+                    //debugmsg("checking Sewer!");
                     good_road("sewer", x, y, z);
                 } else if (check_ot_type("ants", x, y, z)
                            && !check_ot_type("ants_queen", x, y, z)
@@ -2943,12 +2938,12 @@ void overmap::polish(const int z, const std::string &terrain_type)
                     // also taking other road pieces that may be next
                     // to it into account. A bit of a kludge but it works.
                 } else if (ter(x, y, z).has("bridge_ns") &&
-                           (!is_river(ter(x - 1, y, z)) ||
-                            !is_river(ter(x + 1, y, z)))) {
+                           (!has_river(ter(x - 1, y, z)) ||
+                            !has_river(ter(x + 1, y, z)))) {
                     good_road("road", x, y, z);
                 } else if (ter(x, y, z).has("bridge_ew") &&
-                           (!is_river(ter(x, y - 1, z)) ||
-                            !is_river(ter(x, y + 1, z)))) {
+                           (!has_river(ter(x, y - 1, z)) ||
+                            !has_river(ter(x, y + 1, z)))) {
                     good_road("road", x, y, z);
                 } else if (check_ot_type("road", x, y, z)) {
                     good_road("road", x, y, z);
@@ -3009,7 +3004,7 @@ bool overmap::check_ot_type_road(const std::string &otype, int x, int y, int z)
 
 
 
-bool overmap::is_road(int x, int y, int z)
+bool overmap::has_road(int x, int y, int z)
 {
     if (x < 0 || x >= OMAPX || y < 0 || y >= OMAPY) {
         for (auto &it : roads_out) {
@@ -3018,13 +3013,13 @@ bool overmap::is_road(int x, int y, int z)
             }
         }
     }
-    return ter(x, y, z).visible().t().is_road;
+    return ter(x, y, z).has_flag(is_road);
     //oter_t(ter(x, y, z)).is_road;
 }
 
 bool overmap::is_road_or_highway(int x, int y, int z)
 {
-    if (is_road(x, y, z) || check_ot_type("hiway", x, y, z)) {
+    if (has_road(x, y, z) || check_ot_type("hiway", x, y, z)) {
         return true;
     }
     return false;
@@ -3119,9 +3114,9 @@ void overmap::good_road(const std::string &base, int x, int y, int z)
 void overmap::good_river(int x, int y, int z)
 {
     if((x == 0) || (x == OMAPX-1)) {
-        if(!is_river(ter(x, y - 1, z))) {
+        if(!has_river(ter(x, y - 1, z))) {
             ter(x, y, z).set("river_north");
-        } else if(!is_river(ter(x, y + 1, z))) {
+        } else if(!has_river(ter(x, y + 1, z))) {
             ter(x, y, z).set("river_south");
         } else {
             ter(x, y, z).set("river_center");
@@ -3129,28 +3124,28 @@ void overmap::good_river(int x, int y, int z)
         return;
     }
     if((y == 0) || (y == OMAPY-1)) {
-        if(!is_river(ter(x - 1, y, z))) {
+        if(!has_river(ter(x - 1, y, z))) {
             ter(x, y, z).set("river_west");
-        } else if(!is_river(ter(x + 1, y, z))) {
+        } else if(!has_river(ter(x + 1, y, z))) {
             ter(x, y, z).set("river_east");
         } else {
             ter(x, y, z).set("river_center");
         }
         return;
     }
-    if (is_river(ter(x - 1, y, z))) {
-        if (is_river(ter(x, y - 1, z))) {
-            if (is_river(ter(x, y + 1, z))) {
-                if (is_river(ter(x + 1, y, z))) {
+    if (has_river(ter(x - 1, y, z))) {
+        if (has_river(ter(x, y - 1, z))) {
+            if (has_river(ter(x, y + 1, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     // River on N, S, E, W;
                     // but we might need to take a "bite" out of the corner
-                    if (!is_river(ter(x - 1, y - 1, z))) {
+                    if (!has_river(ter(x - 1, y - 1, z))) {
                         ter(x, y, z).set("river_c_not_nw");
-                    } else if (!is_river(ter(x + 1, y - 1, z))) {
+                    } else if (!has_river(ter(x + 1, y - 1, z))) {
                         ter(x, y, z).set("river_c_not_ne");
-                    } else if (!is_river(ter(x - 1, y + 1, z))) {
+                    } else if (!has_river(ter(x - 1, y + 1, z))) {
                         ter(x, y, z).set("river_c_not_sw");
-                    } else if (!is_river(ter(x + 1, y + 1, z))) {
+                    } else if (!has_river(ter(x + 1, y + 1, z))) {
                         ter(x, y, z).set("river_c_not_se");
                     } else {
                         ter(x, y, z).set("river_center");
@@ -3159,43 +3154,43 @@ void overmap::good_river(int x, int y, int z)
                     ter(x, y, z).set("river_east");
                 }
             } else {
-                if (is_river(ter(x + 1, y, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     ter(x, y, z).set("river_south");
                 } else {
                     ter(x, y, z).set("river_se");
                 }
             }
         } else {
-            if (is_river(ter(x, y + 1, z))) {
-                if (is_river(ter(x + 1, y, z))) {
+            if (has_river(ter(x, y + 1, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     ter(x, y, z).set("river_north");
                 } else {
                     ter(x, y, z).set("river_ne");
                 }
             } else {
-                if (is_river(ter(x + 1, y, z))) { // Means it's swampy
+                if (has_river(ter(x + 1, y, z))) { // Means it's swampy
                     ter(x, y, z).set("forest_water");
                 }
             }
         }
     } else {
-        if (is_river(ter(x, y - 1, z))) {
-            if (is_river(ter(x, y + 1, z))) {
-                if (is_river(ter(x + 1, y, z))) {
+        if (has_river(ter(x, y - 1, z))) {
+            if (has_river(ter(x, y + 1, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     ter(x, y, z).set("river_west");
                 } else { // Should never happen
                     ter(x, y, z).set("forest_water");
                 }
             } else {
-                if (is_river(ter(x + 1, y, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     ter(x, y, z).set("river_sw");
                 } else { // Should never happen
                     ter(x, y, z).set("forest_water");
                 }
             }
         } else {
-            if (is_river(ter(x, y + 1, z))) {
-                if (is_river(ter(x + 1, y, z))) {
+            if (has_river(ter(x, y + 1, z))) {
+                if (has_river(ter(x + 1, y, z))) {
                     ter(x, y, z).set("river_nw");
                 } else { // Should never happen
                     ter(x, y, z).set("forest_water");
@@ -3574,7 +3569,7 @@ void overmap::place_special(overmap_special special, tripoint p, int rotation)
             default:
                 break;
             }
-            if(ter(conn.x, conn.y, p.z).visible().t().allow_road) {
+            if(ter(conn.x, conn.y, p.z).visible().t().has_flag(allow_road)) {
                 make_hiway(conn.x, conn.y, closest.x, closest.y, p.z, "road");
             } else { // in case the entrance does not come out the top, try wherever possible...
                 conn = connection.second;
@@ -3654,7 +3649,7 @@ void overmap::place_mongroups()
                 int river_count = 0;
                 for (int sx = x - 3; sx <= x + 3; sx++) {
                     for (int sy = y - 3; sy <= y + 3; sy++) {
-                        if (is_river(ter(sx, sy, 0))) {
+                        if (has_river(ter(sx, sy, 0))) {
                             river_count++;
                         }
                     }
@@ -3758,8 +3753,6 @@ void overmap::open()
         generate(pointers[0], pointers[3], pointers[1], pointers[2]);
     }
 }
-
-#include "omdata.h"
 ////////////////
 oter_iid ot_null,
          ot_crater,

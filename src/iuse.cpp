@@ -3546,7 +3546,7 @@ int iuse::fishing_rod(player *p, item *it, bool, point)
         return 0;
     }
     point op = overmapbuffer::ms_to_omt_copy( g->m.getabs( dirx, diry ) );
-    if (!is_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
+    if (!has_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
         p->add_msg_if_player(m_info, _("That water does not contain any fish. Try a river instead."));
         return 0;
     }
@@ -3598,7 +3598,7 @@ int iuse::fish_trap(player *p, item *it, bool t, point pos)
             return 0;
         }
         point op = overmapbuffer::ms_to_omt_copy(g->m.getabs(dirx, diry));
-        if (!is_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
+        if (!has_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
             p->add_msg_if_player(m_info, _("That water does not contain any fish, try a river instead."));
             return 0;
         }
@@ -3629,7 +3629,7 @@ int iuse::fish_trap(player *p, item *it, bool t, point pos)
                 return 0;
             }
             point op = overmapbuffer::ms_to_omt_copy( g->m.getabs( pos.x, pos.y ) );
-            if (!is_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
+            if (!has_river(overmap_buffer.ter(op.x, op.y, g->levz))) {
                 return 0;
             }
             int success = -50;

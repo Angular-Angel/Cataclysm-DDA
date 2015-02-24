@@ -8,6 +8,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <bitset>
 
 #define OMAPX 180
 #define OMAPY 180
@@ -22,6 +23,27 @@ struct overmap_spawns {
     int max_population;
     int chance;
 };
+    //terrain flags enum! this is for tracking the indices of each flag.
+    //is_asphalt, is_building, is_subway, is_sewer, is_ants,
+    //is_base_terrain, known_down, known_up, is_river,
+    //is_road, has_sidewalk, allow_road, rotates, line_drawing
+enum oter_flags {
+    is_asphalt = 0,
+    is_building,
+    is_subway,
+    is_sewer,
+    is_ants,
+    is_base_terrain,
+    known_down, 
+    known_up, 
+    is_river, 
+    is_road, 
+    has_sidewalk, 
+    allow_road,
+    rotates, // does this tile have four versions, one for each direction?
+    line_drawing, // does this tile have 8 versions, including straights, bends, tees, and a fourway?
+    num_oter_flags
+};
 
 struct oter_t {
     std::string id;      // definitive identifier
@@ -31,13 +53,7 @@ struct oter_t {
     nc_color color;
     unsigned char see_cost; // Affects how far the player can see in the overmap
     std::string extras;
-    bool known_down;
-    bool known_up;
     int mondensity;
-    bool sidewalk;
-    bool allow_road;
-    bool is_river;
-    bool is_road;
     // bool disable_default_mapgen;
     // automatically set. We can be wasteful of memory here for num_oters * sizeof(extrastuff), if it'll save us from thousands of string ops
     std::string
@@ -50,6 +66,19 @@ struct oter_t {
 
     // Spawns are added to the submaps *once* upon mapgen of the submaps
     overmap_spawns static_spawns;
+    private:
+    //this bitset contains boolean values for:
+    //is_asphalt[0], is_building[1], is_subway[2], is_sewer[3], is_ants[4],
+    //is_lab[5], is_ice_lab[6], is_base_terrain[7]
+    std::bitset<num_oter_flags> flags; //contains a bitset for all the bools this terrain might have.
+  public:
+      bool has_flag(oter_flags flag) const {
+          return flags[flag];
+      }
+      
+      void set_flag(oter_flags flag, bool value = true) {
+          flags[flag] = value;
+      }
 };
 
 struct oter_id {
