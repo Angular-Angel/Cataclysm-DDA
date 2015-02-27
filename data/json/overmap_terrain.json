@@ -1975,6 +1975,18 @@
         "see_cost" : 5
     },{
         "type" : "overmap_terrain",
+        "id" : "mall",
+        "name" : "Mall",
+        "sym" : 77,
+        "color" : "i_ltred",
+        "rotate" : true,
+        "see_cost" : 5,
+        "mondensity" : 2,
+        "sidewalk" : true,
+        "building" : true
+    },{
+    },{
+        "type" : "overmap_terrain",
         "id" : "mall_a_1",
         "name" : "road",
         "sym" : [4194412, 4194411, 4194410, 4194413],
@@ -1983,7 +1995,7 @@
         "see_cost" : 5,
         "mondensity" : 2,
         "sidewalk" : true,
-        "building" : true
+        "asphalt" : true
     },{
         "type" : "overmap_terrain",
         "id" : "mall_a_2",

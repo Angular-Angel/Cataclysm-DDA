@@ -385,6 +385,10 @@ void load_overmap_terrain(JsonObject &jo)
     }
     
     oter.set_flag(is_asphalt, jo.get_bool("asphalt", false));
+    oter.set_flag(is_subway, jo.get_bool("subway", false));
+    oter.set_flag(is_sewer, jo.get_bool("sewer", false));
+    oter.set_flag(is_ants, jo.get_bool("ants", false));
+    oter.set_flag(is_base_terrain, jo.get_bool("base_terrain", false));
 
     oter.set_flag(is_road, isroad(id_base));
     oter.set_flag(is_river, (id_base.compare(0, 5, "river", 5) == 0));
@@ -1174,7 +1178,7 @@ bool overmap::generate_sub(int const z)
             // implicitly skip skip_above oter_ids
             bool skipme = false;
             for( auto &elem : skip_above ) {
-                if( oter_above.has(elem) ) {
+                if( oter_above.equals(elem) ) {
                     skipme = true;
                 }
             }
@@ -1182,7 +1186,9 @@ bool overmap::generate_sub(int const z)
                 continue;
             }
 
-            if (is_ot_type("house_base", oter_above)) {
+            if (oter_above.has("forest_water")) {
+                ter(i, j, z).add("cavern");
+            } else if (is_ot_type("house_base", oter_above)) {
                 ter(i, j, z).add("basement");
             } else if (is_ot_type("sub_station", oter_above)) {
                 ter(i, j, z).add("subway_nesw");
@@ -1208,8 +1214,6 @@ bool overmap::generate_sub(int const z)
             } else if (oter_above.has("slimepit_down")) {
                 int size = rng(MIN_GOO_SIZE, MAX_GOO_SIZE);
                 goo_points.push_back(city(i, j, size));
-            } else if (oter_above.has("forest_water")) {
-                ter(i, j, z).add("cavern");
             } else if (oter_above.has("lab_core") ||
                        (z == -1 && oter_above.has("lab_stairs"))) {
                 lab_points.push_back(city(i, j, rng(1, 5 + z)));
@@ -2923,7 +2927,6 @@ void overmap::polish(const int z, const std::string &terrain_type)
                 } else if (check_ot_type("subway", x, y, z)) {
                     good_road("subway", x, y, z);
                 } else if (check_ot_type("sewer", x, y, z)) {
-                    //debugmsg("checking Sewer!");
                     good_road("sewer", x, y, z);
                 } else if (check_ot_type("ants", x, y, z)
                            && !check_ot_type("ants_queen", x, y, z)
@@ -3823,7 +3826,7 @@ bool oter_id::operator!=(const char *v) const
 // ter(...) == "foobar"
 bool oter_id::operator==(const char *v) const
 {
-    return oterlist[_val].id.compare(v) == 0;
+    return t().id.compare(v) == 0;
 }
 bool oter_id::operator<=(const char *v) const
 {

@@ -68,8 +68,9 @@ struct oter_t {
     overmap_spawns static_spawns;
     private:
     //this bitset contains boolean values for:
-    //is_asphalt[0], is_building[1], is_subway[2], is_sewer[3], is_ants[4],
-    //is_lab[5], is_ice_lab[6], is_base_terrain[7]
+    //is_asphalt, is_building, is_subway, is_sewer, is_ants,
+    //is_base_terrain, known_down, known_up, is_river,
+    //is_road, has_sidewalk, allow_road, rotates, line_drawing
     std::bitset<num_oter_flags> flags; //contains a bitset for all the bools this terrain might have.
   public:
       bool has_flag(oter_flags flag) const {

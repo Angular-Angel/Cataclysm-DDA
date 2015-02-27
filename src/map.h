@@ -775,13 +775,13 @@ protected:
         void monster_in_field( monster &z );
 
         void copy_grid( point to, point from );
- void draw_map(const oter_id terrain_type, const complex_map_tile t_north, 
-                   const complex_map_tile t_east, const complex_map_tile t_south, 
-                   const complex_map_tile t_west, const complex_map_tile t_neast,
-                   const complex_map_tile t_seast, const complex_map_tile t_nwest, 
-                   const complex_map_tile t_swest, const complex_map_tile t_above, 
-                   const int turn, const float density, const int zlevel, 
-                   const regional_settings * rsettings);
+ void draw_map(const oter_id terrain_type, const complex_map_tile terrain_tile, 
+                   const complex_map_tile t_north, const complex_map_tile t_east, 
+                   const complex_map_tile t_south, const complex_map_tile t_west, 
+                   const complex_map_tile t_neast, const complex_map_tile t_seast, 
+                   const complex_map_tile t_nwest, const complex_map_tile t_swest, 
+                   const complex_map_tile t_above, const int turn, const float density, 
+                   const int zlevel, const regional_settings * rsettings);
  void add_extra(map_extra type);
  void build_transparency_cache();
 public:

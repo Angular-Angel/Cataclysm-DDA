@@ -306,10 +306,36 @@ struct complex_map_tile {
                 return;
             }
             tiles.push_back(ter);
-        }
-        if (ter.t().has_flag(is_building)) {
+        } else if (ter.t().has_flag(is_building)) {
             if (has_flag(is_building) || has_flag(is_asphalt)) return;
             else tiles.push_back(ter);
+        } else if (ter.t().has_flag(is_subway)) {
+            for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
+                if (it.base()->t().has_flag(is_subway)) { 
+                    tiles.erase(it);
+                    break;
+                }
+            }
+            tiles.push_back(ter);
+            return;
+        } else if (ter.t().has_flag(is_sewer)) {
+            for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
+                if (it.base()->t().has_flag(is_sewer)) { 
+                    tiles.erase(it);
+                    break;
+                }
+            }
+            tiles.push_back(ter);
+            return;
+        } else if (ter.t().has_flag(is_ants)) {
+            for (std::vector<oter_id>::iterator it = tiles.begin(); it != tiles.end(); it++) {
+                if (it.base()->t().has_flag(is_ants)) { 
+                    tiles.erase(it);
+                    break;
+                }
+            }
+            tiles.push_back(ter);
+            return;
         }
         if (!has(ter)) tiles.push_back(ter);
     }
